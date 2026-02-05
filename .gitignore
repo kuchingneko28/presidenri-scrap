@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.bun/
+
+# Database
+*.db
+*.db-journal
+
+# Project Specific
+downloads/
+cookies.txt
+debug_db.ts
+test_date.ts
+test_data.db
+presidenri-old-scrap/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary
+tmp/
+*.log
