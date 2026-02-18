@@ -80,7 +80,13 @@ export function formatStatus(stats: {
   queued: number;
   active: number;
   downloaded: number;
+  state?: "scraping" | "downloading";
 }): string {
-  return `${chalk.hex(THEME.mauve)(`Scraping Page ${stats.page}`)} (${chalk.hex(THEME.subtext1)(`Found: ${stats.found}`)}) | Downloads: ${chalk.hex(THEME.yellow)(`${stats.queued} queued`)}, ${chalk.hex(THEME.blue)(`${stats.active} active`)}, ${chalk.hex(THEME.green)(`${stats.downloaded} done`)}`;
+  const prefix =
+    stats.state === "downloading"
+      ? chalk.hex(THEME.green)("Scraping Complete")
+      : `${chalk.hex(THEME.mauve)(`Scraping Page ${stats.page}`)} (${chalk.hex(THEME.subtext1)(`Found: ${stats.found}`)})`;
+
+  return `${prefix} | Downloads: ${chalk.hex(THEME.yellow)(`${stats.queued} queued`)}, ${chalk.hex(THEME.blue)(`${stats.active} active`)}, ${chalk.hex(THEME.green)(`${stats.downloaded} done`)}`;
 }
 

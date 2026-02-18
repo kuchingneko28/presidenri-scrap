@@ -81,9 +81,6 @@ async function main(): Promise<void> {
       : Number(argv.page) === 1 && !argv.all && !argv.update
         ? 1
         : Number(argv.page) || 1,
-    // Logic: if user says nothing, scrape page 1. If --all, scrape infinity.
-    // Wait, original logic was: maxPages = argv.all ? Infinity : Number(argv.page).
-    // So if page=1, max=1. Correct.
     update: Boolean(argv.update),
     download: Boolean(argv.download),
     verbose: Boolean(argv.verbose),
@@ -122,6 +119,7 @@ async function main(): Promise<void> {
     active: 0,
     downloaded: 0,
     failed: 0,
+    state: "scraping" as "scraping" | "downloading",
   };
 
   // Status Updater Loop
@@ -145,7 +143,6 @@ async function main(): Promise<void> {
         stats.downloaded++;
       } catch (e) {
         stats.failed++;
-        // Error already logged by downloader if verbose, or we can log it here
       } finally {
         stats.active--;
       }
@@ -172,10 +169,7 @@ async function main(): Promise<void> {
         handleDownload,
       );
 
-      stats.found += result.newDownloads; // Tracking "new things related to downloads found" or just articles?
-      // scrapePage returns { stop, newDownloads }
-      // Let's just track found articles in stats if we want, but scraper.ts doesn't return count of articles found easily unless we change interface again.
-      // Current scrapePage returns newDownloads count.
+      stats.found += result.newDownloads;
 
       if (result.stop) {
         ui.warn("Stopping scraper (Limit reached or Error).");
@@ -201,18 +195,16 @@ async function main(): Promise<void> {
   }
 
   // --- Cleanup ---
+  stats.state = "downloading";
+
+  if (downloadPromises.length > 0) {
+    await Promise.all(downloadPromises);
+  }
+
   clearInterval(statusInterval);
   ui.stopSpinner();
 
-  ui.info("Scraping finished. Waiting for pending downloads...");
-
   if (downloadPromises.length > 0) {
-    const total = downloadPromises.length;
-    let finished = 0;
-
-    // Temporary simple progress for remaining
-    // Actually we can just wait all
-    await Promise.all(downloadPromises);
     ui.success(`All pending downloads finished.`);
   }
 
