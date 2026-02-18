@@ -3,6 +3,8 @@
   "module": "src/index.ts",
   "scripts": {
     "start": "bun run src/index.ts",
+    "scrape:all": "bun run src/index.ts --all",
+    "scrape:update": "bun run src/index.ts --update",
     "download": "bun run src/index.ts --download",
     "download:all": "bun run src/index.ts --download --all",
     "update": "bun run src/index.ts --update --download",

@@ -186,12 +186,29 @@ export async function scrapePage(
         });
 
         if (images.length > 0) {
+          // Extract category from URL as tag
+          let tags: string[] = [];
+          try {
+            const urlObj = new URL(meta.link);
+            const pathParts = urlObj.pathname.split("/").filter(Boolean);
+            if (pathParts.length > 0) {
+              const category = pathParts[0]!;
+              // Capitalize first letter
+              const formattedCategory =
+                category.charAt(0).toUpperCase() +
+                category.slice(1).replace(/-/g, " ");
+              tags.push(formattedCategory);
+            }
+          } catch (e) {
+            // Ignore URL parsing errors
+          }
+
           db.saveArticle({
             link: meta.link,
             title: meta.title,
             date: cleanDate,
             description,
-            tags: [], // Tags extraction if needed
+            tags,
             images,
           });
 

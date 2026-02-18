@@ -1,10 +1,10 @@
+import chalk from "chalk";
 import mri from "mri";
 import pLimit from "p-limit";
 import * as downloader from "./core/downloader";
 import * as scraper from "./core/scraper";
 import * as db from "./data/database";
 import * as ui from "./ui/display";
-import chalk from "chalk";
 
 const argv = mri(Bun.argv.slice(2), {
   boolean: ["help", "update", "verbose", "download"],
@@ -46,8 +46,26 @@ Options:
 `);
   process.exit(0);
 }
+// --- Global Signal Handling ---
+let isShuttingDown = false;
+
+const handleExit = (signal: string) => {
+  if (isShuttingDown) {
+    ui.warn(`\nForce exiting...`);
+    process.exit(1);
+  }
+  isShuttingDown = true;
+  ui.stopSpinner();
+  ui.warn(
+    `\nReceived ${signal}. Finishing pending tasks... (Press Ctrl+C again to force exit)`,
+  );
+};
+
+process.on("SIGINT", () => handleExit("SIGINT"));
+process.on("SIGTERM", () => handleExit("SIGTERM"));
 
 async function main(): Promise<void> {
+  process.stdin.resume(); // Ensure the process keeps running to catch signals
   db.initDB();
 
   if (command === "stats") {
@@ -115,7 +133,7 @@ async function main(): Promise<void> {
   let headers: Record<string, string> = await scraper.getFullHeaders();
 
   const handleDownload = (item: downloader.DownloadItem) => {
-    if (!config.download) return;
+    if (!config.download || isShuttingDown) return;
 
     stats.queued++;
     // Fire and forget (tracked by downloadPromises)
@@ -141,6 +159,7 @@ async function main(): Promise<void> {
 
   try {
     while (page <= config.maxPages) {
+      if (isShuttingDown) break;
       stats.page = page;
 
       // Scrape Page
