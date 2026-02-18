@@ -1,6 +1,8 @@
 import { Database } from "bun:sqlite";
+import path from "node:path";
+import { STORAGE_DIR } from "../config/constants";
 
-const DB_PATH = "data.db";
+const DB_PATH = path.join(STORAGE_DIR, "data.db");
 let db: Database;
 interface RawArticle {
   id?: number;

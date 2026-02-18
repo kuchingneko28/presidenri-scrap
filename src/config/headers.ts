@@ -7,7 +7,8 @@ export const HEADERS: Record<string, string> = {
   Priority: "u=0, i",
   Referer:
     "https://www.presidenri.go.id/?__cf_chl_tk=41IvF8hjyqYqErnKnaqOA9I41yG7CxyGgjlZKzt4E0I-1770271945-1.0.1.1-QlhAjnmsvqfBY8_RhwDt2Cj7BWnPi7H6TT6fSK5EAAw",
-  "Sec-CH-UA": '"Not(A:Brand";v="8", "Chromium";v="144", "Microsoft Edge";v="144"',
+  "Sec-CH-UA":
+    '"Not(A:Brand";v="8", "Chromium";v="144", "Microsoft Edge";v="144"',
   "Sec-CH-UA-Arch": '"x86"',
   "Sec-CH-UA-Bitness": '"64"',
   "Sec-CH-UA-Full-Version": '"144.0.3719.104"',
@@ -24,5 +25,5 @@ export const HEADERS: Record<string, string> = {
   "Sec-GPC": "1",
   "Upgrade-Insecure-Requests": "1",
   "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
 };

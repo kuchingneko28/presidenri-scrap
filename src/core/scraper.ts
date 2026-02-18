@@ -5,6 +5,7 @@ import { HEADERS } from "../config/headers";
 import * as db from "../data/database";
 import * as ui from "../ui/display";
 import { parseCookieFileContent, parseDate } from "../utils";
+import { fetchWithRetry } from "../utils/network";
 import type { DownloadItem } from "./downloader";
 
 export function getHeaders(): Record<string, string> {
@@ -27,16 +28,17 @@ async function getCookies(): Promise<string> {
 
 interface ScrapeResult {
   stop: boolean;
-  count: number;
-  downloads: DownloadItem[];
+  newDownloads: number;
 }
 
 export async function scrapePage(
   pageNumber: number,
   config: { verbose?: boolean; download?: boolean },
+  onDownload: (item: DownloadItem) => void,
 ): Promise<ScrapeResult> {
   const url = pageNumber === 1 ? BASE_URL : `${BASE_URL}page/${pageNumber}/`;
-  ui.startSpinner(`Fetching Page ${pageNumber}`);
+
+  // ui.log(`Fetching Page ${pageNumber}...`); // Verbose only? No, orchestrator handles spinner.
 
   const cookieHeader = await getCookies();
   const headers = { ...HEADERS, Cookie: cookieHeader };
@@ -49,36 +51,38 @@ export async function scrapePage(
 
   let response: Response;
   try {
-    response = await fetch(url, { headers });
+    response = await fetchWithRetry(url, { headers, retries: 3 });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
-    ui.error(`Network error: ${msg}`);
-    return { stop: false, count: 0, downloads: [] };
+    ui.error(`Network error on Page ${pageNumber}: ${msg}`);
+    return { stop: false, newDownloads: 0 };
   }
 
   if (!response.ok) {
-    ui.error(`Failed to fetch page ${pageNumber}: ${response.status} ${response.statusText}`);
-    if (response.status === 404) return { stop: true, count: 0, downloads: [] };
-    return { stop: false, count: 0, downloads: [] };
+    ui.error(
+      `Failed to fetch page ${pageNumber}: ${response.status} ${response.statusText}`,
+    );
+    if (response.status === 404) return { stop: true, newDownloads: 0 };
+    return { stop: false, newDownloads: 0 };
   }
 
   const html = await response.text();
 
   if (html.includes("Just a moment...")) {
-    ui.failSpinner("Cloudflare detected! Update cookies.txt");
-    return { stop: true, count: 0, downloads: [] };
+    ui.error("Cloudflare detected! Update cookies.txt");
+    return { stop: true, newDownloads: 0 };
   }
 
   const $ = cheerio.load(html);
   const articleNodes = $("article.media");
 
   if (articleNodes.length === 0) {
-    ui.warn("No articles found on this page.");
-    return { stop: true, count: 0, downloads: [] };
+    ui.warn(`No articles found on Page ${pageNumber}.`);
+    return { stop: true, newDownloads: 0 };
   }
 
   let newCount = 0;
-  const downloads: DownloadItem[] = [];
+  let newDownloadsCount = 0;
   const potentialArticles: ScrapedMetadata[] = [];
   let stopDueToDate = false;
 
@@ -96,8 +100,6 @@ export async function scrapePage(
       potentialArticles.push({ link, title, dateText });
     }
   });
-
-  ui.updateSpinner(`Processing ${potentialArticles.length} items on Page ${pageNumber}...`);
 
   // Deep parse
   const limit = pLimit(5);
@@ -124,17 +126,17 @@ export async function scrapePage(
         if (config.download) {
           const article = db.getArticle(meta.link);
           if (article && article.images && article.images.length > 0) {
-            if (config.verbose) ui.info(`[EXIST] Queuing download: ${meta.title}`);
-
-            // Parse date from DB if it's not already ISO
-            // The DB might contain raw strings from legacy scraper
-            const dateStr = parseDate(article.date) || article.date;
-
-            downloads.push({
-              title: article.title,
-              date: dateStr,
-              images: article.images,
+            // Queue existing images if download is enabled
+            article.images.forEach((img, idx) => {
+              onDownload({
+                title: article.title,
+                date: article.date, // might need ensuring ISO
+                imageUrl: img,
+                index: idx,
+              });
             });
+            if (article.images.length > 0) newDownloadsCount++;
+            if (config.verbose) ui.info(`[EXIST] Queued: ${meta.title}`);
           }
         }
         return;
@@ -142,7 +144,7 @@ export async function scrapePage(
 
       try {
         // Fetch Detail
-        const detailRes = await fetch(meta.link, { headers });
+        const detailRes = await fetchWithRetry(meta.link, { headers });
 
         if (!detailRes.ok) return;
 
@@ -155,8 +157,31 @@ export async function scrapePage(
         }
 
         const images: string[] = [];
-        $d('.flexslider .slides li .content a[data-fancybox="gallery"]').each((_, e) => {
-          const imgUrl = $d(e).attr("href");
+        const slides = $d(".flexslider .slides li");
+
+        slides.each((_, slide) => {
+          const $slide = $d(slide);
+
+          // Strategy 1: Gallery Link (Usually HD)
+          let imgUrl = $slide
+            .find(".content a[data-fancybox='gallery']")
+            .attr("href");
+
+          // Strategy 2: Download Button (Fallback)
+          if (!imgUrl) {
+            imgUrl = $slide.find(".flex-download a").attr("href");
+          }
+
+          // Strategy 3: Original Image src extraction (Last Resort, strip size suffix)
+          if (!imgUrl) {
+            const src = $slide.find("img").attr("src");
+            if (src) {
+              // Try to strip dimension suffix e.g. image-500x500.jpg -> image.jpg
+              // Regex to match -NxN.ext at end
+              imgUrl = src.replace(/-\d+x\d+(\.[a-zA-Z]+)$/, "$1");
+            }
+          }
+
           if (imgUrl) images.push(imgUrl);
         });
 
@@ -166,18 +191,23 @@ export async function scrapePage(
             title: meta.title,
             date: cleanDate,
             description,
-            tags: [],
+            tags: [], // Tags extraction if needed
             images,
           });
 
-          if (config.verbose) ui.success(`Saved: ${meta.title} (${images.length} imgs)`);
+          if (config.verbose)
+            ui.success(`Saved: ${meta.title} (${images.length} imgs)`);
 
           if (config.download) {
-            downloads.push({
-              title: meta.title,
-              date: cleanDate,
-              images,
+            images.forEach((img, idx) => {
+              onDownload({
+                title: meta.title,
+                date: cleanDate,
+                imageUrl: img,
+                index: idx,
+              });
             });
+            newDownloadsCount++;
           }
 
           newCount++;
@@ -191,12 +221,10 @@ export async function scrapePage(
 
   await Promise.all(tasks);
 
-  ui.stopSpinner("✔", `Page ${pageNumber}: ${newCount} new articles.`);
-
   if (stopDueToDate) {
     ui.warn(`Reached year limit (< ${YEAR_LIMIT}). Stopping.`);
-    return { stop: true, count: newCount, downloads };
+    return { stop: true, newDownloads: newDownloadsCount };
   }
 
-  return { stop: false, count: newCount, downloads };
+  return { stop: false, newDownloads: newDownloadsCount };
 }

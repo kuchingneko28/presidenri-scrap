@@ -1,69 +1,93 @@
 # PresidenRI Scraper
 
-A high-performance, modular web scraper for [presidenri.go.id/foto/](https://www.presidenri.go.id/foto/) built with Bun and TypeScript.
+A robust, concurrent web scraper for [presidenri.go.id](https://www.presidenri.go.id) built with Bun, TypeScript, and SQLite.
 
 ## Features
 
-- **Modular Architecture**: Built using a procedural approach for maximum maintainability and clarity.
-- **Type Safety**: Fully implemented in TypeScript with strict type checking and no `any` types.
-- **Concurrent Processing**: Optimized for speed using concurrent scraping and image downloading via `p-limit`.
-- **Smart Data Handling**: Reuses existing SQLite databases to skip redundant downloads and save processing time.
-- **Real-time Feedback**: Detailed CLI progress indicators and logging for monitoring long-running tasks.
-- **Custom Image Logic**: Organizes downloads into year/month-based directory structures while handling complex URL patterns.
-- **Verification Suite**: Includes a comprehensive unit test suite covering all core modules and utilities.
+- **Concurrent Downloading**: Uses a Producer-Consumer pattern to scrape pages and download images in parallel.
+- **Resumable**: Tracks downloaded articles in a SQLite database to prevent duplicates.
+- **Smart Updates**: Stop automatically when no new articles are found (Daily Mode).
+- **Metadata Preservation**: Preserves original image timestamps (`Last-Modified` header) and clean filenames.
+- **Robust Network Handling**: Automatic retries with exponential backoff for reliable scraping.
+- **Organized Storage**:
+  - `downloads/YYYY-MM-DD - Title/`: Images stored in dated folders.
+  - `storage/data.db`: SQLite database.
+  - `storage/cookies.txt`: Cookie storage (optional).
 
-## Technology Stack
+## Requirements
 
-- **Runtime**: [Bun](https://bun.sh/)
-- **Data Layer**: Bun SQLite
-- **Parsing**: Cheerio
-- **CLI Utilities**: Ora, Chalk, mri
+- [Bun](https://bun.sh) (v1.0+)
 
-## Getting Started
-
-### Prerequisites
-
-- [Bun](https://bun.sh/) installed on your system.
-- A `cookies.txt` file in the root directory (optional, used for bypassing security layers).
-
-### Installation
+## Installation
 
 ```bash
 bun install
 ```
 
-### Usage
+## Usage
+
+You can use the built-in scripts for common tasks:
+
+### 1. Scrape Only (No Download)
+
+Crawls pages and saves article metadata to the database.
 
 ```bash
-# Basic execution (Scrape metadata)
-bun run index.ts
-
-# Full execution (Scrape and download images)
-bun run index.ts --download
-
-# Scrape all pages with date limits (Stops at 2018)
-bun run index.ts --all --download
-
-# Update mode (Stops after 3 empty pages)
-bun run index.ts --update --download
-
-# View database statistics
-bun run index.ts stats
+bun run start
+# OR
+bun run src/index.ts
 ```
 
-## Testing
+### 2. Scrape & Download (Recommended)
 
-The project includes a full unit test suite using `bun:test`.
+Crawls and downloads images concurrently.
 
 ```bash
-bun test
+bun run download
 ```
 
-## Project Structure
+### 3. Smart Update
 
-- `src/config/`: Configuration and HTTP header templates.
-- `src/core/`: Primary scraping and downloading logic.
-- `src/data/`: Database management and article schema.
-- `src/ui/`: CLI display and progress modules.
-- `src/utils/`: Specialized date parsing and string utilities.
-- `tests/`: Module-level unit tests.
+Checks for new articles and stops after 3 empty pages. Ideal for cron jobs.
+
+```bash
+bun run update
+```
+
+### 4. Download All History
+
+Scrapes ALL pages (from page 1 to end).
+
+```bash
+bun run download:all
+```
+
+### 5. View Stats
+
+Shows the number of articles in the database.
+
+```bash
+bun run stats
+```
+
+## Configuration
+
+Configuration is handled via command-line arguments.
+Key constants are in `src/config/constants.ts`.
+
+- `STORAGE_DIR`: `storage/` (Database, Cookies)
+- `DOWNLOAD_DIR`: `downloads/`
+
+## Development
+
+```bash
+# Run with verbose logging
+bun run src/index.ts --verbose
+
+# Run specific page range
+bun run src/index.ts --page 10 --download
+```
+
+## License
+
+MIT
