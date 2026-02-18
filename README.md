@@ -5,6 +5,7 @@ A robust, concurrent web scraper for [presidenri.go.id](https://www.presidenri.g
 ## Features
 
 - **Concurrent Downloading**: Uses a Producer-Consumer pattern to scrape pages and download images in parallel.
+- **Smart Tagging**: Automatically categorizes articles based on URL path (e.g., `Foto`, `Siaran Pers`).
 - **Resumable**: Tracks downloaded articles in a SQLite database to prevent duplicates.
 - **Smart Updates**: Stop automatically when no new articles are found (Daily Mode).
 - **Metadata Preservation**: Preserves original image timestamps (`Last-Modified` header) and clean filenames.
