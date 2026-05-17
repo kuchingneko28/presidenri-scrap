@@ -104,17 +104,25 @@ export class DownloadService {
               if (response.body) {
                 const reader = response.body.getReader();
                 while (true) {
-                  const readPromise = reader.read();
-                  const timeoutPromise = new Promise<never>((_, reject) => 
-                    setTimeout(() => reject(new Error('Stream read timeout (tarpit detected)')), 30000)
-                  );
-                  const { done, value } = await Promise.race([readPromise, timeoutPromise]);
-                  if (done) break;
-                  if (value) {
-                    chunks.push(value);
-                    receivedLength += value.length;
-                    currentBytesDownloaded += value.length;
-                    this.stats.bytesDownloaded += value.length;
+                  let timeoutId: NodeJS.Timeout;
+                  const timeoutPromise = new Promise<never>((_, reject) => {
+                    timeoutId = setTimeout(() => {
+                      reader.cancel().catch(() => {});
+                      reject(new Error('Stream read timeout (tarpit detected)'));
+                    }, 30000);
+                  });
+
+                  try {
+                    const { done, value } = await Promise.race([reader.read(), timeoutPromise]);
+                    if (done) break;
+                    if (value) {
+                      chunks.push(value);
+                      receivedLength += value.length;
+                      currentBytesDownloaded += value.length;
+                      this.stats.bytesDownloaded += value.length;
+                    }
+                  } finally {
+                    clearTimeout(timeoutId!);
                   }
                 }
               } else {
