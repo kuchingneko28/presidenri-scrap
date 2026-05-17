@@ -168,8 +168,11 @@ export class DownloadService {
               this.logger.warn(`Fetch failed for ${url}: ${(error as Error).message}`);
             }
             if (lastError.message.includes("403")) {
-              this.logger.error(`\nCRITICAL: Cloudflare block detected during download. Aborting!`);
-              process.kill(process.pid, "SIGINT");
+              if (!this.isShuttingDown) {
+                this.isShuttingDown = true;
+                this.logger.error(`\nCRITICAL: Cloudflare block detected during download. Aborting!`);
+                process.kill(process.pid, "SIGINT");
+              }
               throw lastError;
             }
           }

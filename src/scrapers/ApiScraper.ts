@@ -213,6 +213,7 @@ export class ApiScraper extends BaseScraper {
       if (this.options.verbose) {
         this.logger.warn(`Failed to fetch media for post ${postId}: ${e}`);
       }
+      throw e; // Throw so we don't accidentally overwrite the DB with partial fallback images
     }
 
     const date = post.date.substring(0, 10);
