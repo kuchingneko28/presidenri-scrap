@@ -30,63 +30,79 @@ export class ApiScraper extends BaseScraper {
         url += `&search=${encodeURIComponent(this.options.search)}`;
       }
       
-      try {
-        const response = await this.network.fetch(url, { verbose: this.options.verbose });
-        if (!response.ok) {
-          if (response.status === 400) {
+      let retries = 3;
+      let success = false;
+
+      for (let i = 0; i < retries; i++) {
+        try {
+          const response = await this.network.fetch(url, { verbose: this.options.verbose });
+          if (!response.ok) {
+            if (response.status === 400) {
+              stopScraper = true;
+              success = true;
+              break;
+            }
+            throw new Error(`API returned ${response.status}`);
+          }
+
+          const total = response.headers.get("X-WP-Total");
+          if (total) this.stats.total = parseInt(total);
+
+          const posts = (await response.json()) as WordPressPost[];
+          if (posts.length === 0) {
             stopScraper = true;
+            success = true;
             break;
           }
-          throw new Error(`API returned ${response.status}`);
-        }
 
-        const total = response.headers.get("X-WP-Total");
-        if (total) this.stats.total = parseInt(total);
+          const limit = pLimit(5);
+          const pagePromises = posts.map(post => limit(async () => {
+            if (this.isShuttingDown) return;
+            if (this.options.limit && this.stats.found >= this.options.limit) {
+              stopScraper = true;
+              return;
+            }
+            if (this.options.since && post.date < this.options.since) {
+              stopScraper = true;
+              return;
+            }
 
-        const posts = (await response.json()) as WordPressPost[];
-        if (posts.length === 0) {
-          stopScraper = true;
+            const title = decodeHtmlEntities(post.title.rendered);
+            const excerpt = decodeHtmlEntities(post.excerpt.rendered);
+            if (!this.matchesFilter(title) && !this.matchesFilter(excerpt)) {
+              return;
+            }
+
+            const saved = await this.processPost(post);
+            if (saved) {
+              this.stats.found++;
+              if (this.options.verbose) {
+                this.logger.success(`Saved: ${decodeHtmlEntities(post.title.rendered)}`);
+              }
+              if (this.stats.found % 10 === 0) {
+                this.updateStats({});
+              }
+            } else if (this.options.verbose) {
+              this.logger.info(`Skipped (already up to date): ${decodeHtmlEntities(post.title.rendered)}`);
+            }
+          }));
+
+          await Promise.all(pagePromises);
+          page++;
+          success = true;
           break;
+        } catch (error) {
+          if (i === retries - 1) {
+            this.logger.error(`Error on page ${page}: ${error}`);
+            stopScraper = true; // Stop if final retry fails
+          } else {
+            this.logger.warn(`Retry ${i + 1}/${retries} for page ${page} after error: ${error}`);
+            await new Promise(r => setTimeout(r, 2000 * (i + 1)));
+          }
         }
-
-        const limit = pLimit(5);
-        const pagePromises = posts.map(post => limit(async () => {
-          if (this.isShuttingDown) return;
-          if (this.options.limit && this.stats.found >= this.options.limit) {
-            stopScraper = true;
-            return;
-          }
-          if (this.options.since && post.date < this.options.since) {
-            stopScraper = true;
-            return;
-          }
-
-          const title = decodeHtmlEntities(post.title.rendered);
-          const excerpt = decodeHtmlEntities(post.excerpt.rendered);
-          if (!this.matchesFilter(title) && !this.matchesFilter(excerpt)) {
-            return;
-          }
-
-          const saved = await this.processPost(post);
-          if (saved) {
-            this.stats.found++;
-            if (this.options.verbose) {
-              this.logger.success(`Saved: ${decodeHtmlEntities(post.title.rendered)}`);
-            }
-            if (this.stats.found % 10 === 0) {
-              this.updateStats({});
-            }
-          } else if (this.options.verbose) {
-            this.logger.info(`Skipped (already up to date): ${decodeHtmlEntities(post.title.rendered)}`);
-          }
-        }));
-
-        await Promise.all(pagePromises);
-        page++;
-      } catch (error) {
-        this.logger.error(`Error on page ${page}: ${error}`);
-        break; // Stop completely on error (NetworkService already retried 3 times)
       }
+      
+      if (!success) break;
     }
 
     this.stats.state = "downloading";
