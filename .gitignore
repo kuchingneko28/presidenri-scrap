@@ -9,6 +9,10 @@ node_modules/
 # Project Specific
 downloads/
 cookies.txt
+curl.txt
+storage/cookies.txt
+storage/request.curl
+storage/browser-request.curl
 debug_db.ts
 test_date.ts
 test_data.db
@@ -27,3 +31,4 @@ Thumbs.db
 # Temporary
 tmp/
 *.log
+storage/data.db*

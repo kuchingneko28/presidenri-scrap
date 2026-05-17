@@ -2,13 +2,14 @@
   "name": "presidenri-scrap",
   "module": "src/index.ts",
   "scripts": {
-    "start": "bun run src/index.ts",
-    "scrape:all": "bun run src/index.ts --all",
-    "scrape:update": "bun run src/index.ts --update",
-    "download": "bun run src/index.ts --download",
-    "download:all": "bun run src/index.ts --download --all",
-    "update": "bun run src/index.ts --update --download",
-    "stats": "bun run src/index.ts stats"
+    "start": "bun run src/index.ts api",
+    "api": "bun run src/index.ts api",
+    "legacy": "bun run src/index.ts legacy",
+    "download": "bun run src/index.ts api --download",
+    "update": "bun run src/index.ts legacy --update",
+    "stats": "bun run src/index.ts stats",
+    "sync": "bun run src/index.ts sync",
+    "request": "bun run src/index.ts request"
   },
   "type": "module",
   "private": true,
@@ -21,9 +22,10 @@
   },
   "dependencies": {
     "@types/ora": "^3.2.0",
+    "cac": "^7.0.0",
     "chalk": "^5.6.2",
     "cheerio": "^1.2.0",
-    "mri": "^1.2.0",
+    "impit": "^0.14.0",
     "ora": "^9.3.0",
     "p-limit": "^7.3.0"
   }

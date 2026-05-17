@@ -6,9 +6,10 @@
       "name": "presidenri-scrap",
       "dependencies": {
         "@types/ora": "^3.2.0",
+        "cac": "^7.0.0",
         "chalk": "^5.6.2",
         "cheerio": "^1.2.0",
-        "mri": "^1.2.0",
+        "impit": "^0.14.0",
         "ora": "^9.3.0",
         "p-limit": "^7.3.0",
       },
@@ -35,6 +36,8 @@
     "boolbase": ["boolbase@1.0.0", "", {}, "sha512-JZOSA7Mo9sNGB8+UjSgzdLtokWAky1zbztM3WRLCbZ70/3cTANmQmOdR7y2g+J0e2WXywy1yS468tY+IruqEww=="],
 
     "bun-types": ["bun-types@1.3.8", "", { "dependencies": { "@types/node": "*" } }, "sha512-fL99nxdOWvV4LqjmC+8Q9kW3M4QTtTR1eePs94v5ctGqU8OeceWrSUaRw3JYb7tU3FkMIAjkueehrHPPPGKi5Q=="],
+
+    "cac": ["cac@7.0.0", "", {}, "sha512-tixWYgm5ZoOD+3g6UTea91eow5z6AAHaho3g0V9CNSNb45gM8SmflpAc+GRd1InC4AqN/07Unrgp56Y94N9hJQ=="],
 
     "chalk": ["chalk@5.6.2", "", {}, "sha512-7NzBL0rN6fMUW+f7A6Io4h40qQlG+xGmtMxfbnH/K7TAtt8JQWVQK+6g0UXKMeVJoyV5EkkNsErQ8pVD3bLHbA=="],
 
@@ -68,6 +71,24 @@
 
     "iconv-lite": ["iconv-lite@0.6.3", "", { "dependencies": { "safer-buffer": ">= 2.1.2 < 3.0.0" } }, "sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw=="],
 
+    "impit": ["impit@0.14.0", "", { "optionalDependencies": { "impit-darwin-arm64": "0.14.0", "impit-darwin-x64": "0.14.0", "impit-linux-arm64-gnu": "0.14.0", "impit-linux-arm64-musl": "0.14.0", "impit-linux-x64-gnu": "0.14.0", "impit-linux-x64-musl": "0.14.0", "impit-win32-arm64-msvc": "0.14.0", "impit-win32-x64-msvc": "0.14.0" } }, "sha512-kxd8IUkzwajLIZiNIbRVcsry/mY7yQNhQ8XIcpKCZ3Sv9KirRMt7hbAwy3D5GBJNHvgHIplivHgnegQ7P87F6g=="],
+
+    "impit-darwin-arm64": ["impit-darwin-arm64@0.14.0", "", { "os": "darwin", "cpu": "arm64" }, "sha512-I/v/raC+kx0dhiTZ7MTNtqDvYz9cuBZYrKR2g1YWsDSF16msTvjYc/4vEII5o7fBeUWyxzt9lC8Ef4HD3Lvi1Q=="],
+
+    "impit-darwin-x64": ["impit-darwin-x64@0.14.0", "", { "os": "darwin", "cpu": "x64" }, "sha512-R4rxz8ub/L8B5rTdYa6uanzB5SotvbOYmSUbWM4lDcYCr/UWIkybTi9+MvIRMIoX3UI3KPvvrtDD11v+VO03Kw=="],
+
+    "impit-linux-arm64-gnu": ["impit-linux-arm64-gnu@0.14.0", "", { "os": "linux", "cpu": "arm64" }, "sha512-JBjmjH8hGe+UJIDPKoS40GvRRfJrtFkGiUxupksTVdbAAI3+SVyhwBo1I6ave9Ig5QrMVpj6XWPUDbDepPdaCw=="],
+
+    "impit-linux-arm64-musl": ["impit-linux-arm64-musl@0.14.0", "", { "os": "linux", "cpu": "arm64" }, "sha512-TPMa02wppWdlAqacrLT8qxM+EGoKi7b1mTUZLhWsjaSfweIsJmCCQygN/+eMZFT070pTcUNSTQBxzb3zBQKRQg=="],
+
+    "impit-linux-x64-gnu": ["impit-linux-x64-gnu@0.14.0", "", { "os": "linux", "cpu": "x64" }, "sha512-VfaWq+YI5muQsM6cBoG4d+ltb0hzbJU4mj8PcG7M+Xe9Srq2jOIwoSQmgU9hhgnP9HKhiPTY/05Z8jvmllmZQw=="],
+
+    "impit-linux-x64-musl": ["impit-linux-x64-musl@0.14.0", "", { "os": "linux", "cpu": "x64" }, "sha512-oGCJu11f0R5wSfB6HSCIUIZ8Fic/2JmBDioxifgxDtFJ9EEl2e4WinTD8woKNaS6LqwrIgUE9NJ4CXrwxCbrog=="],
+
+    "impit-win32-arm64-msvc": ["impit-win32-arm64-msvc@0.14.0", "", { "os": "win32", "cpu": "arm64" }, "sha512-V/GJP5l4y3MGjMVJJXiZ09guQBvIDaDKdvONe+i8zpDbRopZLSRdWrsaTaiG/Nes2Iy7kS7q3eFgsV5ID45sPw=="],
+
+    "impit-win32-x64-msvc": ["impit-win32-x64-msvc@0.14.0", "", { "os": "win32", "cpu": "x64" }, "sha512-lgVnvVxUlNtyctPFjWUrWtTitK+aahwgn3YzeakODN2dVY5x7XOP1wg7XQjOg/AD6ydc40yBwWXyOf1hknGsHA=="],
+
     "is-interactive": ["is-interactive@2.0.0", "", {}, "sha512-qP1vozQRI+BMOPcjFzrjXuQvdak2pHNUMZoeG2eRbiSqyvbEf/wQtEOTOX1guk6E3t36RkaqiSt8A/6YElNxLQ=="],
 
     "is-unicode-supported": ["is-unicode-supported@2.1.0", "", {}, "sha512-mE00Gnza5EEB3Ds0HfMyllZzbBrmLOX3vfWoj9A9PEnTfratQ/BcaJOuMhnkhjXvb2+FkY3VuHqtAGpTPmglFQ=="],
@@ -75,8 +96,6 @@
     "log-symbols": ["log-symbols@7.0.1", "", { "dependencies": { "is-unicode-supported": "^2.0.0", "yoctocolors": "^2.1.1" } }, "sha512-ja1E3yCr9i/0hmBVaM0bfwDjnGy8I/s6PP4DFp+yP+a+mrHO4Rm7DtmnqROTUkHIkqffC84YY7AeqX6oFk0WFg=="],
 
     "mimic-function": ["mimic-function@5.0.1", "", {}, "sha512-VP79XUPxV2CigYP3jWwAUFSku2aKqBH7uTAapFWCBqutsbmDo96KY5o8uh6U+/YSIn5OxJnXp73beVkpqMIGhA=="],
-
-    "mri": ["mri@1.2.0", "", {}, "sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA=="],
 
     "nth-check": ["nth-check@2.1.1", "", { "dependencies": { "boolbase": "^1.0.0" } }, "sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w=="],
 

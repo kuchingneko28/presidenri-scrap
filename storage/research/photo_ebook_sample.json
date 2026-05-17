@@ -1,0 +1,751 @@
+[
+  {
+    "id": 27292,
+    "date": "2020-10-30T10:08:58",
+    "date_gmt": "2020-10-30T03:08:58",
+    "guid": { "rendered": "https:\/\/www.presidenri.go.id\/?post_type=photo-ebook&#038;p=27292" },
+    "modified": "2020-12-30T10:11:14",
+    "modified_gmt": "2020-12-30T03:11:14",
+    "slug": "edisi-12",
+    "status": "publish",
+    "type": "photo-ebook",
+    "link": "https:\/\/presidenri.go.id\/album-foto\/edisi-12\/",
+    "title": { "rendered": "Edisi 12" },
+    "featured_media": 27293,
+    "template": "",
+    "class_list": [
+      "post-27292",
+      "photo-ebook",
+      "type-photo-ebook",
+      "status-publish",
+      "has-post-thumbnail",
+      "hentry"
+    ],
+    "yoast_head": "<!-- This site is optimized with the Yoast SEO plugin v26.9 - https:\/\/yoast.com\/product\/yoast-seo-wordpress\/ -->\n<title>[E-Album] Edisi 12<\/title>\n<meta name=\"description\" content=\"E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 12.\" \/>\n<meta name=\"robots\" content=\"index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1\" \/>\n<link rel=\"canonical\" href=\"https:\/\/presidenri.go.id\/album-foto\/edisi-12\/\" \/>\n<meta property=\"og:locale\" content=\"id_ID\" \/>\n<meta property=\"og:type\" content=\"article\" \/>\n<meta property=\"og:title\" content=\"[E-Album] Edisi 12\" \/>\n<meta property=\"og:description\" content=\"E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 12.\" \/>\n<meta property=\"og:url\" content=\"https:\/\/presidenri.go.id\/album-foto\/edisi-12\/\" \/>\n<meta property=\"og:site_name\" content=\"Presiden RI\" \/>\n<meta property=\"article:publisher\" content=\"https:\/\/www.facebook.com\/Jokowi\/\" \/>\n<meta property=\"article:modified_time\" content=\"2020-12-30T03:11:14+00:00\" \/>\n<meta property=\"og:image\" content=\"https:\/\/presidenri.go.id\/uploads\/2020\/12\/presidenri.go.id-30122020100916-5febef5ce93cf2.87927325-e1609297794678.jpg\" \/>\n\t<meta property=\"og:image:width\" content=\"1353\" \/>\n\t<meta property=\"og:image:height\" content=\"1804\" \/>\n\t<meta property=\"og:image:type\" content=\"image\/jpeg\" \/>\n<meta name=\"twitter:card\" content=\"summary_large_image\" \/>\n<meta name=\"twitter:site\" content=\"@jokowi\" \/>\n<!-- \/ Yoast SEO plugin. -->",
+    "yoast_head_json": {
+      "title": "[E-Album] Edisi 12",
+      "description": "E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 12.",
+      "robots": {
+        "index": "index",
+        "follow": "follow",
+        "max-snippet": "max-snippet:-1",
+        "max-image-preview": "max-image-preview:large",
+        "max-video-preview": "max-video-preview:-1"
+      },
+      "canonical": "https:\/\/presidenri.go.id\/album-foto\/edisi-12\/",
+      "og_locale": "id_ID",
+      "og_type": "article",
+      "og_title": "[E-Album] Edisi 12",
+      "og_description": "E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 12.",
+      "og_url": "https:\/\/presidenri.go.id\/album-foto\/edisi-12\/",
+      "og_site_name": "Presiden RI",
+      "article_publisher": "https:\/\/www.facebook.com\/Jokowi\/",
+      "article_modified_time": "2020-12-30T03:11:14+00:00",
+      "og_image": [
+        {
+          "width": 1353,
+          "height": 1804,
+          "url": "https:\/\/presidenri.go.id\/uploads\/2020\/12\/presidenri.go.id-30122020100916-5febef5ce93cf2.87927325-e1609297794678.jpg",
+          "type": "image\/jpeg"
+        }
+      ],
+      "twitter_card": "summary_large_image",
+      "twitter_site": "@jokowi",
+      "schema": {
+        "@context": "https:\/\/schema.org",
+        "@graph": [
+          {
+            "@type": "WebPage",
+            "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-12\/",
+            "url": "https:\/\/presidenri.go.id\/album-foto\/edisi-12\/",
+            "name": "[E-Album] Edisi 12",
+            "isPartOf": { "@id": "https:\/\/beta.presidenri.go.id\/#website" },
+            "primaryImageOfPage": {
+              "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-12\/#primaryimage"
+            },
+            "image": { "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-12\/#primaryimage" },
+            "thumbnailUrl": "https:\/\/presidenri.go.id\/uploads\/2020\/12\/presidenri.go.id-30122020100916-5febef5ce93cf2.87927325-e1609297794678.jpg",
+            "datePublished": "2020-10-30T03:08:58+00:00",
+            "dateModified": "2020-12-30T03:11:14+00:00",
+            "description": "E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 12.",
+            "breadcrumb": {
+              "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-12\/#breadcrumb"
+            },
+            "inLanguage": "en-US",
+            "potentialAction": [
+              {
+                "@type": "ReadAction",
+                "target": ["https:\/\/presidenri.go.id\/album-foto\/edisi-12\/"]
+              }
+            ]
+          },
+          {
+            "@type": "ImageObject",
+            "inLanguage": "en-US",
+            "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-12\/#primaryimage",
+            "url": "https:\/\/presidenri.go.id\/uploads\/2020\/12\/presidenri.go.id-30122020100916-5febef5ce93cf2.87927325-e1609297794678.jpg",
+            "contentUrl": "https:\/\/presidenri.go.id\/uploads\/2020\/12\/presidenri.go.id-30122020100916-5febef5ce93cf2.87927325-e1609297794678.jpg",
+            "width": 1353,
+            "height": 1804
+          },
+          {
+            "@type": "BreadcrumbList",
+            "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-12\/#breadcrumb",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https:\/\/beta.presidenri.go.id\/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Photo Ebooks",
+                "item": "https:\/\/beta.presidenri.go.id\/album-foto\/"
+              },
+              { "@type": "ListItem", "position": 3, "name": "Edisi 12" }
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https:\/\/beta.presidenri.go.id\/#website",
+            "url": "https:\/\/beta.presidenri.go.id\/",
+            "name": "Presiden RI",
+            "description": "Laman Resmi Presiden Republik Indonesia",
+            "potentialAction": [
+              {
+                "@type": "SearchAction",
+                "target": {
+                  "@type": "EntryPoint",
+                  "urlTemplate": "https:\/\/beta.presidenri.go.id\/?s={search_term_string}"
+                },
+                "query-input": {
+                  "@type": "PropertyValueSpecification",
+                  "valueRequired": true,
+                  "valueName": "search_term_string"
+                }
+              }
+            ],
+            "inLanguage": "en-US"
+          }
+        ]
+      }
+    },
+    "_links": {
+      "self": [
+        {
+          "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/photo-ebook\/27292",
+          "targetHints": { "allow": ["GET"] }
+        }
+      ],
+      "collection": [{ "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/photo-ebook" }],
+      "about": [{ "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/types\/photo-ebook" }],
+      "wp:featuredmedia": [
+        { "embeddable": true, "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/media\/27293" }
+      ],
+      "wp:attachment": [
+        { "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/media?parent=27292" }
+      ],
+      "curies": [{ "name": "wp", "href": "https:\/\/api.w.org\/{rel}", "templated": true }]
+    }
+  },
+  {
+    "id": 24925,
+    "date": "2020-10-22T14:03:38",
+    "date_gmt": "2020-10-22T07:03:38",
+    "guid": { "rendered": "https:\/\/www.presidenri.go.id\/?post_type=photo-ebook&#038;p=24925" },
+    "modified": "2020-10-22T14:03:38",
+    "modified_gmt": "2020-10-22T07:03:38",
+    "slug": "edisi-11",
+    "status": "publish",
+    "type": "photo-ebook",
+    "link": "https:\/\/presidenri.go.id\/album-foto\/edisi-11\/",
+    "title": { "rendered": "Edisi 11" },
+    "featured_media": 24927,
+    "template": "",
+    "class_list": [
+      "post-24925",
+      "photo-ebook",
+      "type-photo-ebook",
+      "status-publish",
+      "has-post-thumbnail",
+      "hentry"
+    ],
+    "yoast_head": "<!-- This site is optimized with the Yoast SEO plugin v26.9 - https:\/\/yoast.com\/product\/yoast-seo-wordpress\/ -->\n<title>[E-Album] Edisi 11<\/title>\n<meta name=\"description\" content=\"E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 11.\" \/>\n<meta name=\"robots\" content=\"index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1\" \/>\n<link rel=\"canonical\" href=\"https:\/\/presidenri.go.id\/album-foto\/edisi-11\/\" \/>\n<meta property=\"og:locale\" content=\"id_ID\" \/>\n<meta property=\"og:type\" content=\"article\" \/>\n<meta property=\"og:title\" content=\"[E-Album] Edisi 11\" \/>\n<meta property=\"og:description\" content=\"E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 11.\" \/>\n<meta property=\"og:url\" content=\"https:\/\/presidenri.go.id\/album-foto\/edisi-11\/\" \/>\n<meta property=\"og:site_name\" content=\"Presiden RI\" \/>\n<meta property=\"article:publisher\" content=\"https:\/\/www.facebook.com\/Jokowi\/\" \/>\n<meta property=\"og:image\" content=\"https:\/\/presidenri.go.id\/uploads\/2020\/10\/presidenri.go.id-22102020122819-5f911873ce2545.98226228-e1603344713174.jpeg\" \/>\n\t<meta property=\"og:image:width\" content=\"749\" \/>\n\t<meta property=\"og:image:height\" content=\"1003\" \/>\n\t<meta property=\"og:image:type\" content=\"image\/jpeg\" \/>\n<meta name=\"twitter:card\" content=\"summary_large_image\" \/>\n<meta name=\"twitter:site\" content=\"@jokowi\" \/>\n<!-- \/ Yoast SEO plugin. -->",
+    "yoast_head_json": {
+      "title": "[E-Album] Edisi 11",
+      "description": "E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 11.",
+      "robots": {
+        "index": "index",
+        "follow": "follow",
+        "max-snippet": "max-snippet:-1",
+        "max-image-preview": "max-image-preview:large",
+        "max-video-preview": "max-video-preview:-1"
+      },
+      "canonical": "https:\/\/presidenri.go.id\/album-foto\/edisi-11\/",
+      "og_locale": "id_ID",
+      "og_type": "article",
+      "og_title": "[E-Album] Edisi 11",
+      "og_description": "E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 11.",
+      "og_url": "https:\/\/presidenri.go.id\/album-foto\/edisi-11\/",
+      "og_site_name": "Presiden RI",
+      "article_publisher": "https:\/\/www.facebook.com\/Jokowi\/",
+      "og_image": [
+        {
+          "width": 749,
+          "height": 1003,
+          "url": "https:\/\/presidenri.go.id\/uploads\/2020\/10\/presidenri.go.id-22102020122819-5f911873ce2545.98226228-e1603344713174.jpeg",
+          "type": "image\/jpeg"
+        }
+      ],
+      "twitter_card": "summary_large_image",
+      "twitter_site": "@jokowi",
+      "schema": {
+        "@context": "https:\/\/schema.org",
+        "@graph": [
+          {
+            "@type": "WebPage",
+            "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-11\/",
+            "url": "https:\/\/presidenri.go.id\/album-foto\/edisi-11\/",
+            "name": "[E-Album] Edisi 11",
+            "isPartOf": { "@id": "https:\/\/beta.presidenri.go.id\/#website" },
+            "primaryImageOfPage": {
+              "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-11\/#primaryimage"
+            },
+            "image": { "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-11\/#primaryimage" },
+            "thumbnailUrl": "https:\/\/presidenri.go.id\/uploads\/2020\/10\/presidenri.go.id-22102020122819-5f911873ce2545.98226228-e1603344713174.jpeg",
+            "datePublished": "2020-10-22T07:03:38+00:00",
+            "description": "E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 11.",
+            "breadcrumb": {
+              "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-11\/#breadcrumb"
+            },
+            "inLanguage": "en-US",
+            "potentialAction": [
+              {
+                "@type": "ReadAction",
+                "target": ["https:\/\/presidenri.go.id\/album-foto\/edisi-11\/"]
+              }
+            ]
+          },
+          {
+            "@type": "ImageObject",
+            "inLanguage": "en-US",
+            "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-11\/#primaryimage",
+            "url": "https:\/\/presidenri.go.id\/uploads\/2020\/10\/presidenri.go.id-22102020122819-5f911873ce2545.98226228-e1603344713174.jpeg",
+            "contentUrl": "https:\/\/presidenri.go.id\/uploads\/2020\/10\/presidenri.go.id-22102020122819-5f911873ce2545.98226228-e1603344713174.jpeg",
+            "width": 749,
+            "height": 1003
+          },
+          {
+            "@type": "BreadcrumbList",
+            "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-11\/#breadcrumb",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https:\/\/beta.presidenri.go.id\/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Photo Ebooks",
+                "item": "https:\/\/beta.presidenri.go.id\/album-foto\/"
+              },
+              { "@type": "ListItem", "position": 3, "name": "Edisi 11" }
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https:\/\/beta.presidenri.go.id\/#website",
+            "url": "https:\/\/beta.presidenri.go.id\/",
+            "name": "Presiden RI",
+            "description": "Laman Resmi Presiden Republik Indonesia",
+            "potentialAction": [
+              {
+                "@type": "SearchAction",
+                "target": {
+                  "@type": "EntryPoint",
+                  "urlTemplate": "https:\/\/beta.presidenri.go.id\/?s={search_term_string}"
+                },
+                "query-input": {
+                  "@type": "PropertyValueSpecification",
+                  "valueRequired": true,
+                  "valueName": "search_term_string"
+                }
+              }
+            ],
+            "inLanguage": "en-US"
+          }
+        ]
+      }
+    },
+    "_links": {
+      "self": [
+        {
+          "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/photo-ebook\/24925",
+          "targetHints": { "allow": ["GET"] }
+        }
+      ],
+      "collection": [{ "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/photo-ebook" }],
+      "about": [{ "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/types\/photo-ebook" }],
+      "wp:featuredmedia": [
+        { "embeddable": true, "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/media\/24927" }
+      ],
+      "wp:attachment": [
+        { "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/media?parent=24925" }
+      ],
+      "curies": [{ "name": "wp", "href": "https:\/\/api.w.org\/{rel}", "templated": true }]
+    }
+  },
+  {
+    "id": 24511,
+    "date": "2020-10-02T08:56:48",
+    "date_gmt": "2020-10-02T01:56:48",
+    "guid": { "rendered": "https:\/\/www.presidenri.go.id\/?post_type=photo-ebook&#038;p=24511" },
+    "modified": "2020-10-02T08:56:48",
+    "modified_gmt": "2020-10-02T01:56:48",
+    "slug": "edisi-10",
+    "status": "publish",
+    "type": "photo-ebook",
+    "link": "https:\/\/presidenri.go.id\/album-foto\/edisi-10\/",
+    "title": { "rendered": "Edisi 10" },
+    "featured_media": 24512,
+    "template": "",
+    "class_list": [
+      "post-24511",
+      "photo-ebook",
+      "type-photo-ebook",
+      "status-publish",
+      "has-post-thumbnail",
+      "hentry"
+    ],
+    "yoast_head": "<!-- This site is optimized with the Yoast SEO plugin v26.9 - https:\/\/yoast.com\/product\/yoast-seo-wordpress\/ -->\n<title>[E-Album] Edisi 10<\/title>\n<meta name=\"description\" content=\"E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 10.\" \/>\n<meta name=\"robots\" content=\"index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1\" \/>\n<link rel=\"canonical\" href=\"https:\/\/presidenri.go.id\/album-foto\/edisi-10\/\" \/>\n<meta property=\"og:locale\" content=\"id_ID\" \/>\n<meta property=\"og:type\" content=\"article\" \/>\n<meta property=\"og:title\" content=\"[E-Album] Edisi 10\" \/>\n<meta property=\"og:description\" content=\"E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 10.\" \/>\n<meta property=\"og:url\" content=\"https:\/\/presidenri.go.id\/album-foto\/edisi-10\/\" \/>\n<meta property=\"og:site_name\" content=\"Presiden RI\" \/>\n<meta property=\"article:publisher\" content=\"https:\/\/www.facebook.com\/Jokowi\/\" \/>\n<meta property=\"og:image\" content=\"https:\/\/presidenri.go.id\/uploads\/2020\/10\/presidenri.go.id-02102020083850-5f7684aa097069.36391691-e1601602836500.jpg\" \/>\n\t<meta property=\"og:image:width\" content=\"1353\" \/>\n\t<meta property=\"og:image:height\" content=\"1804\" \/>\n\t<meta property=\"og:image:type\" content=\"image\/jpeg\" \/>\n<meta name=\"twitter:card\" content=\"summary_large_image\" \/>\n<meta name=\"twitter:site\" content=\"@jokowi\" \/>\n<!-- \/ Yoast SEO plugin. -->",
+    "yoast_head_json": {
+      "title": "[E-Album] Edisi 10",
+      "description": "E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 10.",
+      "robots": {
+        "index": "index",
+        "follow": "follow",
+        "max-snippet": "max-snippet:-1",
+        "max-image-preview": "max-image-preview:large",
+        "max-video-preview": "max-video-preview:-1"
+      },
+      "canonical": "https:\/\/presidenri.go.id\/album-foto\/edisi-10\/",
+      "og_locale": "id_ID",
+      "og_type": "article",
+      "og_title": "[E-Album] Edisi 10",
+      "og_description": "E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 10.",
+      "og_url": "https:\/\/presidenri.go.id\/album-foto\/edisi-10\/",
+      "og_site_name": "Presiden RI",
+      "article_publisher": "https:\/\/www.facebook.com\/Jokowi\/",
+      "og_image": [
+        {
+          "width": 1353,
+          "height": 1804,
+          "url": "https:\/\/presidenri.go.id\/uploads\/2020\/10\/presidenri.go.id-02102020083850-5f7684aa097069.36391691-e1601602836500.jpg",
+          "type": "image\/jpeg"
+        }
+      ],
+      "twitter_card": "summary_large_image",
+      "twitter_site": "@jokowi",
+      "schema": {
+        "@context": "https:\/\/schema.org",
+        "@graph": [
+          {
+            "@type": "WebPage",
+            "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-10\/",
+            "url": "https:\/\/presidenri.go.id\/album-foto\/edisi-10\/",
+            "name": "[E-Album] Edisi 10",
+            "isPartOf": { "@id": "https:\/\/beta.presidenri.go.id\/#website" },
+            "primaryImageOfPage": {
+              "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-10\/#primaryimage"
+            },
+            "image": { "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-10\/#primaryimage" },
+            "thumbnailUrl": "https:\/\/presidenri.go.id\/uploads\/2020\/10\/presidenri.go.id-02102020083850-5f7684aa097069.36391691-e1601602836500.jpg",
+            "datePublished": "2020-10-02T01:56:48+00:00",
+            "description": "E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 10.",
+            "breadcrumb": {
+              "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-10\/#breadcrumb"
+            },
+            "inLanguage": "en-US",
+            "potentialAction": [
+              {
+                "@type": "ReadAction",
+                "target": ["https:\/\/presidenri.go.id\/album-foto\/edisi-10\/"]
+              }
+            ]
+          },
+          {
+            "@type": "ImageObject",
+            "inLanguage": "en-US",
+            "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-10\/#primaryimage",
+            "url": "https:\/\/presidenri.go.id\/uploads\/2020\/10\/presidenri.go.id-02102020083850-5f7684aa097069.36391691-e1601602836500.jpg",
+            "contentUrl": "https:\/\/presidenri.go.id\/uploads\/2020\/10\/presidenri.go.id-02102020083850-5f7684aa097069.36391691-e1601602836500.jpg",
+            "width": 1353,
+            "height": 1804
+          },
+          {
+            "@type": "BreadcrumbList",
+            "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-10\/#breadcrumb",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https:\/\/beta.presidenri.go.id\/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Photo Ebooks",
+                "item": "https:\/\/beta.presidenri.go.id\/album-foto\/"
+              },
+              { "@type": "ListItem", "position": 3, "name": "Edisi 10" }
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https:\/\/beta.presidenri.go.id\/#website",
+            "url": "https:\/\/beta.presidenri.go.id\/",
+            "name": "Presiden RI",
+            "description": "Laman Resmi Presiden Republik Indonesia",
+            "potentialAction": [
+              {
+                "@type": "SearchAction",
+                "target": {
+                  "@type": "EntryPoint",
+                  "urlTemplate": "https:\/\/beta.presidenri.go.id\/?s={search_term_string}"
+                },
+                "query-input": {
+                  "@type": "PropertyValueSpecification",
+                  "valueRequired": true,
+                  "valueName": "search_term_string"
+                }
+              }
+            ],
+            "inLanguage": "en-US"
+          }
+        ]
+      }
+    },
+    "_links": {
+      "self": [
+        {
+          "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/photo-ebook\/24511",
+          "targetHints": { "allow": ["GET"] }
+        }
+      ],
+      "collection": [{ "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/photo-ebook" }],
+      "about": [{ "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/types\/photo-ebook" }],
+      "wp:featuredmedia": [
+        { "embeddable": true, "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/media\/24512" }
+      ],
+      "wp:attachment": [
+        { "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/media?parent=24511" }
+      ],
+      "curies": [{ "name": "wp", "href": "https:\/\/api.w.org\/{rel}", "templated": true }]
+    }
+  },
+  {
+    "id": 24001,
+    "date": "2020-09-21T09:48:06",
+    "date_gmt": "2020-09-21T02:48:06",
+    "guid": { "rendered": "https:\/\/www.presidenri.go.id\/?post_type=photo-ebook&#038;p=24001" },
+    "modified": "2020-09-29T20:40:50",
+    "modified_gmt": "2020-09-29T13:40:50",
+    "slug": "edisi-09",
+    "status": "publish",
+    "type": "photo-ebook",
+    "link": "https:\/\/presidenri.go.id\/album-foto\/edisi-09\/",
+    "title": { "rendered": "Edisi 09" },
+    "featured_media": 24002,
+    "template": "",
+    "class_list": [
+      "post-24001",
+      "photo-ebook",
+      "type-photo-ebook",
+      "status-publish",
+      "has-post-thumbnail",
+      "hentry"
+    ],
+    "yoast_head": "<!-- This site is optimized with the Yoast SEO plugin v26.9 - https:\/\/yoast.com\/product\/yoast-seo-wordpress\/ -->\n<title>[E-Album] Edisi 09<\/title>\n<meta name=\"description\" content=\"E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 09.\" \/>\n<meta name=\"robots\" content=\"index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1\" \/>\n<link rel=\"canonical\" href=\"https:\/\/presidenri.go.id\/album-foto\/edisi-09\/\" \/>\n<meta property=\"og:locale\" content=\"id_ID\" \/>\n<meta property=\"og:type\" content=\"article\" \/>\n<meta property=\"og:title\" content=\"[E-Album] Edisi 09\" \/>\n<meta property=\"og:description\" content=\"E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 09.\" \/>\n<meta property=\"og:url\" content=\"https:\/\/presidenri.go.id\/album-foto\/edisi-09\/\" \/>\n<meta property=\"og:site_name\" content=\"Presiden RI\" \/>\n<meta property=\"article:publisher\" content=\"https:\/\/www.facebook.com\/Jokowi\/\" \/>\n<meta property=\"article:modified_time\" content=\"2020-09-29T13:40:50+00:00\" \/>\n<meta property=\"og:image\" content=\"https:\/\/presidenri.go.id\/uploads\/2020\/09\/presidenri.go.id-16092020125841-5f61a9911358d2.99553645-e1600236098171.jpg\" \/>\n\t<meta property=\"og:image:width\" content=\"1353\" \/>\n\t<meta property=\"og:image:height\" content=\"1804\" \/>\n\t<meta property=\"og:image:type\" content=\"image\/jpeg\" \/>\n<meta name=\"twitter:card\" content=\"summary_large_image\" \/>\n<meta name=\"twitter:site\" content=\"@jokowi\" \/>\n<!-- \/ Yoast SEO plugin. -->",
+    "yoast_head_json": {
+      "title": "[E-Album] Edisi 09",
+      "description": "E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 09.",
+      "robots": {
+        "index": "index",
+        "follow": "follow",
+        "max-snippet": "max-snippet:-1",
+        "max-image-preview": "max-image-preview:large",
+        "max-video-preview": "max-video-preview:-1"
+      },
+      "canonical": "https:\/\/presidenri.go.id\/album-foto\/edisi-09\/",
+      "og_locale": "id_ID",
+      "og_type": "article",
+      "og_title": "[E-Album] Edisi 09",
+      "og_description": "E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 09.",
+      "og_url": "https:\/\/presidenri.go.id\/album-foto\/edisi-09\/",
+      "og_site_name": "Presiden RI",
+      "article_publisher": "https:\/\/www.facebook.com\/Jokowi\/",
+      "article_modified_time": "2020-09-29T13:40:50+00:00",
+      "og_image": [
+        {
+          "width": 1353,
+          "height": 1804,
+          "url": "https:\/\/presidenri.go.id\/uploads\/2020\/09\/presidenri.go.id-16092020125841-5f61a9911358d2.99553645-e1600236098171.jpg",
+          "type": "image\/jpeg"
+        }
+      ],
+      "twitter_card": "summary_large_image",
+      "twitter_site": "@jokowi",
+      "schema": {
+        "@context": "https:\/\/schema.org",
+        "@graph": [
+          {
+            "@type": "WebPage",
+            "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-09\/",
+            "url": "https:\/\/presidenri.go.id\/album-foto\/edisi-09\/",
+            "name": "[E-Album] Edisi 09",
+            "isPartOf": { "@id": "https:\/\/beta.presidenri.go.id\/#website" },
+            "primaryImageOfPage": {
+              "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-09\/#primaryimage"
+            },
+            "image": { "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-09\/#primaryimage" },
+            "thumbnailUrl": "https:\/\/presidenri.go.id\/uploads\/2020\/09\/presidenri.go.id-16092020125841-5f61a9911358d2.99553645-e1600236098171.jpg",
+            "datePublished": "2020-09-21T02:48:06+00:00",
+            "dateModified": "2020-09-29T13:40:50+00:00",
+            "description": "E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 09.",
+            "breadcrumb": {
+              "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-09\/#breadcrumb"
+            },
+            "inLanguage": "en-US",
+            "potentialAction": [
+              {
+                "@type": "ReadAction",
+                "target": ["https:\/\/presidenri.go.id\/album-foto\/edisi-09\/"]
+              }
+            ]
+          },
+          {
+            "@type": "ImageObject",
+            "inLanguage": "en-US",
+            "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-09\/#primaryimage",
+            "url": "https:\/\/presidenri.go.id\/uploads\/2020\/09\/presidenri.go.id-16092020125841-5f61a9911358d2.99553645-e1600236098171.jpg",
+            "contentUrl": "https:\/\/presidenri.go.id\/uploads\/2020\/09\/presidenri.go.id-16092020125841-5f61a9911358d2.99553645-e1600236098171.jpg",
+            "width": 1353,
+            "height": 1804
+          },
+          {
+            "@type": "BreadcrumbList",
+            "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-09\/#breadcrumb",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https:\/\/beta.presidenri.go.id\/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Photo Ebooks",
+                "item": "https:\/\/beta.presidenri.go.id\/album-foto\/"
+              },
+              { "@type": "ListItem", "position": 3, "name": "Edisi 09" }
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https:\/\/beta.presidenri.go.id\/#website",
+            "url": "https:\/\/beta.presidenri.go.id\/",
+            "name": "Presiden RI",
+            "description": "Laman Resmi Presiden Republik Indonesia",
+            "potentialAction": [
+              {
+                "@type": "SearchAction",
+                "target": {
+                  "@type": "EntryPoint",
+                  "urlTemplate": "https:\/\/beta.presidenri.go.id\/?s={search_term_string}"
+                },
+                "query-input": {
+                  "@type": "PropertyValueSpecification",
+                  "valueRequired": true,
+                  "valueName": "search_term_string"
+                }
+              }
+            ],
+            "inLanguage": "en-US"
+          }
+        ]
+      }
+    },
+    "_links": {
+      "self": [
+        {
+          "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/photo-ebook\/24001",
+          "targetHints": { "allow": ["GET"] }
+        }
+      ],
+      "collection": [{ "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/photo-ebook" }],
+      "about": [{ "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/types\/photo-ebook" }],
+      "wp:featuredmedia": [
+        { "embeddable": true, "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/media\/24002" }
+      ],
+      "wp:attachment": [
+        { "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/media?parent=24001" }
+      ],
+      "curies": [{ "name": "wp", "href": "https:\/\/api.w.org\/{rel}", "templated": true }]
+    }
+  },
+  {
+    "id": 23846,
+    "date": "2020-09-03T19:45:24",
+    "date_gmt": "2020-09-03T12:45:24",
+    "guid": { "rendered": "https:\/\/www.presidenri.go.id\/?post_type=photo-ebook&#038;p=23846" },
+    "modified": "2020-09-03T19:45:24",
+    "modified_gmt": "2020-09-03T12:45:24",
+    "slug": "edisi-08",
+    "status": "publish",
+    "type": "photo-ebook",
+    "link": "https:\/\/presidenri.go.id\/album-foto\/edisi-08\/",
+    "title": { "rendered": "Edisi 08" },
+    "featured_media": 23847,
+    "template": "",
+    "class_list": [
+      "post-23846",
+      "photo-ebook",
+      "type-photo-ebook",
+      "status-publish",
+      "has-post-thumbnail",
+      "hentry"
+    ],
+    "yoast_head": "<!-- This site is optimized with the Yoast SEO plugin v26.9 - https:\/\/yoast.com\/product\/yoast-seo-wordpress\/ -->\n<title>[E-Album] Edisi 08<\/title>\n<meta name=\"description\" content=\"E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 08.\" \/>\n<meta name=\"robots\" content=\"index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1\" \/>\n<link rel=\"canonical\" href=\"https:\/\/presidenri.go.id\/album-foto\/edisi-08\/\" \/>\n<meta property=\"og:locale\" content=\"id_ID\" \/>\n<meta property=\"og:type\" content=\"article\" \/>\n<meta property=\"og:title\" content=\"[E-Album] Edisi 08\" \/>\n<meta property=\"og:description\" content=\"E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 08.\" \/>\n<meta property=\"og:url\" content=\"https:\/\/presidenri.go.id\/album-foto\/edisi-08\/\" \/>\n<meta property=\"og:site_name\" content=\"Presiden RI\" \/>\n<meta property=\"article:publisher\" content=\"https:\/\/www.facebook.com\/Jokowi\/\" \/>\n<meta property=\"og:image\" content=\"https:\/\/presidenri.go.id\/uploads\/2020\/09\/presidenri.go.id-03092020191646-5f50deae7e7cf4.89000106-e1599135539573.jpg\" \/>\n\t<meta property=\"og:image:width\" content=\"1353\" \/>\n\t<meta property=\"og:image:height\" content=\"1804\" \/>\n\t<meta property=\"og:image:type\" content=\"image\/jpeg\" \/>\n<meta name=\"twitter:card\" content=\"summary_large_image\" \/>\n<meta name=\"twitter:site\" content=\"@jokowi\" \/>\n<!-- \/ Yoast SEO plugin. -->",
+    "yoast_head_json": {
+      "title": "[E-Album] Edisi 08",
+      "description": "E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 08.",
+      "robots": {
+        "index": "index",
+        "follow": "follow",
+        "max-snippet": "max-snippet:-1",
+        "max-image-preview": "max-image-preview:large",
+        "max-video-preview": "max-video-preview:-1"
+      },
+      "canonical": "https:\/\/presidenri.go.id\/album-foto\/edisi-08\/",
+      "og_locale": "id_ID",
+      "og_type": "article",
+      "og_title": "[E-Album] Edisi 08",
+      "og_description": "E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 08.",
+      "og_url": "https:\/\/presidenri.go.id\/album-foto\/edisi-08\/",
+      "og_site_name": "Presiden RI",
+      "article_publisher": "https:\/\/www.facebook.com\/Jokowi\/",
+      "og_image": [
+        {
+          "width": 1353,
+          "height": 1804,
+          "url": "https:\/\/presidenri.go.id\/uploads\/2020\/09\/presidenri.go.id-03092020191646-5f50deae7e7cf4.89000106-e1599135539573.jpg",
+          "type": "image\/jpeg"
+        }
+      ],
+      "twitter_card": "summary_large_image",
+      "twitter_site": "@jokowi",
+      "schema": {
+        "@context": "https:\/\/schema.org",
+        "@graph": [
+          {
+            "@type": "WebPage",
+            "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-08\/",
+            "url": "https:\/\/presidenri.go.id\/album-foto\/edisi-08\/",
+            "name": "[E-Album] Edisi 08",
+            "isPartOf": { "@id": "https:\/\/beta.presidenri.go.id\/#website" },
+            "primaryImageOfPage": {
+              "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-08\/#primaryimage"
+            },
+            "image": { "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-08\/#primaryimage" },
+            "thumbnailUrl": "https:\/\/presidenri.go.id\/uploads\/2020\/09\/presidenri.go.id-03092020191646-5f50deae7e7cf4.89000106-e1599135539573.jpg",
+            "datePublished": "2020-09-03T12:45:24+00:00",
+            "description": "E-Album Foto Presiden dan Ibu Negara Republik Indonesia Edisi 08.",
+            "breadcrumb": {
+              "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-08\/#breadcrumb"
+            },
+            "inLanguage": "en-US",
+            "potentialAction": [
+              {
+                "@type": "ReadAction",
+                "target": ["https:\/\/presidenri.go.id\/album-foto\/edisi-08\/"]
+              }
+            ]
+          },
+          {
+            "@type": "ImageObject",
+            "inLanguage": "en-US",
+            "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-08\/#primaryimage",
+            "url": "https:\/\/presidenri.go.id\/uploads\/2020\/09\/presidenri.go.id-03092020191646-5f50deae7e7cf4.89000106-e1599135539573.jpg",
+            "contentUrl": "https:\/\/presidenri.go.id\/uploads\/2020\/09\/presidenri.go.id-03092020191646-5f50deae7e7cf4.89000106-e1599135539573.jpg",
+            "width": 1353,
+            "height": 1804
+          },
+          {
+            "@type": "BreadcrumbList",
+            "@id": "https:\/\/presidenri.go.id\/album-foto\/edisi-08\/#breadcrumb",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https:\/\/beta.presidenri.go.id\/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Photo Ebooks",
+                "item": "https:\/\/beta.presidenri.go.id\/album-foto\/"
+              },
+              { "@type": "ListItem", "position": 3, "name": "Edisi 08" }
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https:\/\/beta.presidenri.go.id\/#website",
+            "url": "https:\/\/beta.presidenri.go.id\/",
+            "name": "Presiden RI",
+            "description": "Laman Resmi Presiden Republik Indonesia",
+            "potentialAction": [
+              {
+                "@type": "SearchAction",
+                "target": {
+                  "@type": "EntryPoint",
+                  "urlTemplate": "https:\/\/beta.presidenri.go.id\/?s={search_term_string}"
+                },
+                "query-input": {
+                  "@type": "PropertyValueSpecification",
+                  "valueRequired": true,
+                  "valueName": "search_term_string"
+                }
+              }
+            ],
+            "inLanguage": "en-US"
+          }
+        ]
+      }
+    },
+    "_links": {
+      "self": [
+        {
+          "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/photo-ebook\/23846",
+          "targetHints": { "allow": ["GET"] }
+        }
+      ],
+      "collection": [{ "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/photo-ebook" }],
+      "about": [{ "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/types\/photo-ebook" }],
+      "wp:featuredmedia": [
+        { "embeddable": true, "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/media\/23847" }
+      ],
+      "wp:attachment": [
+        { "href": "https:\/\/presidenri.go.id\/wp-json\/wp\/v2\/media?parent=23846" }
+      ],
+      "curies": [{ "name": "wp", "href": "https:\/\/api.w.org\/{rel}", "templated": true }]
+    }
+  }
+]
