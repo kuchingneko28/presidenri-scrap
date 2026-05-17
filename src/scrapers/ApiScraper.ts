@@ -20,7 +20,11 @@ export class ApiScraper extends BaseScraper {
       this.updateStats({ page });
       let url = `https://presidenri.go.id/wp-json/wp/v2/photo?per_page=${perPage}&page=${page}`;
       if (this.options.before) {
-        url += `&before=${this.options.before}T23:59:59`;
+        let beforeStr = this.options.before;
+        if (beforeStr.length === 4) {
+          beforeStr += "-12-31"; // Default to end of year if only year is provided
+        }
+        url += `&before=${beforeStr}T23:59:59`;
       }
       
       let retries = 3;
