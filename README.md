@@ -1,6 +1,6 @@
 # PresidenRI Scraper
 
-A high-performance, concurrent web scraper for [presidenri.go.id](https://www.presidenri.go.id) built with **Bun**, **TypeScript**, and **SQLite**. Refactored for a modern service-oriented architecture with browser impersonation and robust error handling.
+A web scraper for [presidenri.go.id/foto](https://presidenri.go.id/foto/) built with **Bun**, **TypeScript**, and **SQLite**.
 
 ## ✨ Features
 
