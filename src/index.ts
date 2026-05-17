@@ -13,6 +13,7 @@ cli
   .option("--per-page <n>", "Articles per API request", { default: 100 })
   .option("--filter <text>", "Only process articles containing this text")
   .option("--since <date>", "Stop at this date (YYYY-MM-DD)", { default: DEFAULT_SINCE })
+  .option("--before <date>", "Start from this date going backwards (YYYY-MM-DD)")
   .option("--limit <n>", "Maximum number of articles to process")
   .action(async (options) => {
     await app.runApiScraper({
@@ -22,6 +23,7 @@ cli
       perPage: options.perPage,
       filter: options.filter,
       since: options.since,
+      before: options.before,
       limit: options.limit ? parseInt(options.limit) : undefined,
     });
     app.shutdown();

@@ -42,5 +42,6 @@ export interface ScraperOptions {
   stopAfterEmptyPages?: number;
   filter?: string;
   since?: string;
+  before?: string;
   limit?: number;
 }

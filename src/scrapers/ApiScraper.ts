@@ -18,7 +18,10 @@ export class ApiScraper extends BaseScraper {
 
     while (!stopScraper && !this.isShuttingDown) {
       this.updateStats({ page });
-      const url = `https://presidenri.go.id/wp-json/wp/v2/photo?per_page=${perPage}&page=${page}`;
+      let url = `https://presidenri.go.id/wp-json/wp/v2/photo?per_page=${perPage}&page=${page}`;
+      if (this.options.before) {
+        url += `&before=${this.options.before}T23:59:59`;
+      }
       
       let retries = 3;
       let success = false;
