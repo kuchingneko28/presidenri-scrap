@@ -26,6 +26,9 @@ export class ApiScraper extends BaseScraper {
         }
         url += `&before=${beforeStr}T23:59:59`;
       }
+      if (this.options.search) {
+        url += `&search=${encodeURIComponent(this.options.search)}`;
+      }
       
       let retries = 3;
       let success = false;
@@ -59,7 +62,10 @@ export class ApiScraper extends BaseScraper {
               stopScraper = true;
               return;
             }
-            if (this.options.since && post.date < this.options.since) return;
+            if (this.options.since && post.date < this.options.since) {
+              stopScraper = true;
+              return;
+            }
 
             const title = decodeHtmlEntities(post.title.rendered);
             const excerpt = decodeHtmlEntities(post.excerpt.rendered);

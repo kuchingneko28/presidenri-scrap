@@ -12,6 +12,7 @@ cli
   .option("-f, --force", "Ignore database check")
   .option("--per-page <n>", "Articles per API request", { default: 100 })
   .option("--filter <text>", "Only process articles containing this text")
+  .option("--search <text>", "Ask the server to only return articles matching this text")
   .option("--since <date>", "Stop at this date (YYYY-MM-DD)", { default: DEFAULT_SINCE })
   .option("--before <date>", "Start from this date going backwards (YYYY-MM-DD)")
   .option("--limit <n>", "Maximum number of articles to process")
@@ -22,6 +23,7 @@ cli
       force: options.force,
       perPage: options.perPage,
       filter: options.filter,
+      search: options.search,
       since: options.since,
       before: options.before,
       limit: options.limit ? parseInt(options.limit) : undefined,

@@ -41,6 +41,7 @@ export interface ScraperOptions {
   startPage?: number;
   stopAfterEmptyPages?: number;
   filter?: string;
+  search?: string;
   since?: string;
   before?: string;
   limit?: number;

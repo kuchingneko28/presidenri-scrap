@@ -104,7 +104,11 @@ export class DownloadService {
               if (response.body) {
                 const reader = response.body.getReader();
                 while (true) {
-                  const { done, value } = await reader.read();
+                  const readPromise = reader.read();
+                  const timeoutPromise = new Promise<never>((_, reject) => 
+                    setTimeout(() => reject(new Error('Stream read timeout (tarpit detected)')), 30000)
+                  );
+                  const { done, value } = await Promise.race([readPromise, timeoutPromise]);
                   if (done) break;
                   if (value) {
                     chunks.push(value);
