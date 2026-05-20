@@ -37,163 +37,16 @@ export class DownloadService {
     this.stats.queued++;
 
     return this.limit(async () => {
-      if (this.isShuttingDown) {
-        return;
-      }
+      if (this.isShuttingDown) return;
       this.stats.active++;
       try {
-        const folderName = `${item.date} - ${sanitize(item.title)}`;
-        const folderPath = path.join(DOWNLOAD_DIR, folderName);
-        mkdirSync(folderPath, { recursive: true });
+        const filePath = this.getFilePath(item);
+        if (await this.checkFileExists(filePath, verbose, item)) return;
 
-        const urlPath = item.imageUrl.split('?')[0] || '';
-        const originalFileName = path.basename(urlPath);
-        const fileName = originalFileName.includes('.')
-          ? originalFileName
-          : `image_${item.index}.jpg`;
-        const filePath = path.join(folderPath, fileName);
+        const { response, buffer } = await this.fetchWithFallbacks(item, verbose);
+        await this.saveFile(filePath, buffer, response, item);
 
-        const file = Bun.file(filePath);
-        if (await file.exists()) {
-          if (verbose) {
-            this.logger.info(`Skipping existing: ${fileName}`);
-          }
-          await new Promise(r => setTimeout(r, 1)); // Prevent tight loop of stat calls from maxing CPU
-          this.stats.done++;
-          return;
-        }
-
-        const uniqueUrls = UrlGenerator.generateCandidates(item.imageUrl);
-
-        let response: Response | undefined;
-        let buffer: ArrayBuffer | Uint8Array | undefined;
-        let lastError: Error | undefined;
-
-        let success = false;
-        for (const url of uniqueUrls) {
-          let currentBytesTotal = 0;
-          let currentBytesDownloaded = 0;
-          try {
-            if (verbose && url !== item.imageUrl) {
-              this.logger.info(`Trying fallback: ${url}`);
-            }
-
-            response = await this.network.fetch(
-              url,
-              {
-                verbose,
-                timeout: 300000
-              },
-              1
-            );
-
-            const contentType = response.headers.get('Content-Type') || '';
-            if (!response.ok || (!contentType.startsWith('image/') && response.status !== 404)) {
-              throw new Error(`Invalid response (${response.status})`);
-            }
-
-            const contentLength = parseInt(response.headers.get('Content-Length') || '0', 10);
-            if (contentLength > 0) {
-              currentBytesTotal = contentLength;
-              this.stats.bytesTotal += contentLength;
-            }
-
-            let receivedLength = 0;
-            const chunks: Uint8Array[] = [];
-
-            try {
-              if (response.body) {
-                const reader = response.body.getReader();
-                while (true) {
-                  let timeoutId: NodeJS.Timeout;
-                  const timeoutPromise = new Promise<never>((_, reject) => {
-                    timeoutId = setTimeout(() => {
-                      reader.cancel().catch(() => {});
-                      reject(new Error('Stream read timeout (tarpit detected)'));
-                    }, 30000);
-                  });
-
-                  try {
-                    const { done, value } = await Promise.race([reader.read(), timeoutPromise]);
-                    if (done) break;
-                    if (value) {
-                      chunks.push(value);
-                      receivedLength += value.length;
-                      currentBytesDownloaded += value.length;
-                      this.stats.bytesDownloaded += value.length;
-                    }
-                  } finally {
-                    clearTimeout(timeoutId!);
-                  }
-                }
-              } else {
-                const ab = await response.arrayBuffer();
-                receivedLength = ab.byteLength;
-                chunks.push(new Uint8Array(ab));
-                currentBytesDownloaded += receivedLength;
-                this.stats.bytesDownloaded += receivedLength;
-                if (contentLength === 0) {
-                  currentBytesTotal = receivedLength;
-                  this.stats.bytesTotal += receivedLength;
-                }
-              }
-            } finally {
-              // We intentionally DO NOT subtract the bytes here on success.
-              // This makes the progress cumulative (ever-growing) instead of jumping up and down.
-              if (contentLength === 0 && receivedLength > 0 && response.body) {
-                // If there was no content length but we streamed it, add it to total now
-                currentBytesTotal = receivedLength;
-                this.stats.bytesTotal += receivedLength;
-              }
-            }
-
-            const uint8Buffer = new Uint8Array(receivedLength);
-            let position = 0;
-            for (const chunk of chunks) {
-              uint8Buffer.set(chunk, position);
-              position += chunk.length;
-            }
-            buffer = uint8Buffer;
-
-            if (buffer.byteLength < 500) {
-              throw new Error('File too small');
-            }
-
-            success = true;
-            break;
-          } catch (error) {
-            this.stats.bytesTotal -= currentBytesTotal;
-            this.stats.bytesDownloaded -= currentBytesDownloaded;
-            lastError = error as Error;
-            if (verbose) {
-              this.logger.warn(`Fetch failed for ${url}: ${(error as Error).message}`);
-            }
-            if (lastError.message.includes("403")) {
-              if (!this.isShuttingDown) {
-                this.isShuttingDown = true;
-                this.logger.error(`\nCRITICAL: Cloudflare block detected during download. Aborting!`);
-                process.kill(process.pid, "SIGINT");
-              }
-              throw lastError;
-            }
-          }
-        }
-
-        if (!success || !response || !buffer) {
-          const attemptMsg = uniqueUrls.length > 1 ? `after trying ${uniqueUrls.length} URL variations` : 'URL';
-          throw new Error(`Failed ${attemptMsg}. Last error: ${lastError?.message || 'Unknown'}`);
-        }
-
-        await Bun.write(filePath, buffer);
-
-        // Preserve metadata (Modification Time)
-        const lastModified = response.headers.get('Last-Modified');
-        const mtime = lastModified ? new Date(lastModified) : new Date(item.date);
-        if (!isNaN(mtime.getTime())) {
-          utimesSync(filePath, mtime, mtime);
-        }
-
-        if (verbose) this.logger.success(`Downloaded: ${fileName}`);
+        if (verbose) this.logger.success(`Downloaded: ${path.basename(filePath)}`);
         this.stats.done++;
       } catch (error) {
         this.stats.failed++;
@@ -202,6 +55,156 @@ export class DownloadService {
         this.stats.active--;
       }
     });
+  }
+
+  private getFilePath(item: DownloadItem): string {
+    const folderName = `${item.date} - ${sanitize(item.title)}`;
+    const folderPath = path.join(DOWNLOAD_DIR, folderName);
+    mkdirSync(folderPath, { recursive: true });
+
+    const urlPath = item.imageUrl.split('?')[0] || '';
+    const originalFileName = path.basename(urlPath);
+    const fileName = originalFileName.includes('.') ? originalFileName : `image_${item.index}.jpg`;
+    return path.join(folderPath, fileName);
+  }
+
+  private async checkFileExists(filePath: string, verbose: boolean, item: DownloadItem): Promise<boolean> {
+    const file = Bun.file(filePath);
+    if (await file.exists()) {
+      if (verbose) this.logger.info(`Skipping existing: ${path.basename(filePath)}`);
+      await new Promise(r => setTimeout(r, 1));
+      this.stats.done++;
+      return true;
+    }
+    return false;
+  }
+
+  private async fetchWithFallbacks(item: DownloadItem, verbose: boolean): Promise<{ response: Response, buffer: Uint8Array }> {
+    const uniqueUrls = UrlGenerator.generateCandidates(item.imageUrl);
+    let lastError: Error | undefined;
+
+    for (const url of uniqueUrls) {
+      let currentBytesTotal = 0;
+      let currentBytesDownloaded = 0;
+      try {
+        if (verbose && url !== item.imageUrl) this.logger.info(`Trying fallback: ${url}`);
+        
+        const response = await this.network.fetch(url, { verbose, timeout: 300000 }, 1);
+        this.validateResponse(response);
+
+        const contentLength = parseInt(response.headers.get('Content-Length') || '0', 10);
+        if (contentLength > 0) {
+          currentBytesTotal = contentLength;
+          this.stats.bytesTotal += contentLength;
+        }
+
+        let receivedLength = 0;
+        let chunks: Uint8Array[] = [];
+
+        try {
+          if (response.body) {
+            const { length, data } = await this.readStream(response.body);
+            receivedLength = length;
+            chunks = data;
+          } else {
+            const ab = await response.arrayBuffer();
+            receivedLength = ab.byteLength;
+            chunks = [new Uint8Array(ab)];
+          }
+          currentBytesDownloaded += receivedLength;
+          this.stats.bytesDownloaded += receivedLength;
+          if (contentLength === 0) {
+            currentBytesTotal = receivedLength;
+            this.stats.bytesTotal += receivedLength;
+          }
+        } finally {
+          if (contentLength === 0 && receivedLength > 0 && response.body) {
+            currentBytesTotal = receivedLength;
+            this.stats.bytesTotal += receivedLength;
+          }
+        }
+
+        const buffer = this.concatChunks(chunks, receivedLength);
+        if (buffer.byteLength < 500) throw new Error('File too small');
+
+        return { response, buffer };
+      } catch (error) {
+        this.stats.bytesTotal -= currentBytesTotal;
+        this.stats.bytesDownloaded -= currentBytesDownloaded;
+        lastError = error as Error;
+        
+        if (verbose) this.logger.warn(`Fetch failed for ${url}: ${lastError.message}`);
+        this.checkCloudflareBlock(lastError);
+      }
+    }
+
+    const attemptMsg = uniqueUrls.length > 1 ? `after trying ${uniqueUrls.length} URL variations` : 'URL';
+    throw new Error(`Failed ${attemptMsg}. Last error: ${lastError?.message || 'Unknown'}`);
+  }
+
+  private validateResponse(response: Response): void {
+    const contentType = response.headers.get('Content-Type') || '';
+    if (!response.ok || (!contentType.startsWith('image/') && response.status !== 404)) {
+      throw new Error(`Invalid response (${response.status})`);
+    }
+  }
+
+  private async readStream(body: ReadableStream<Uint8Array>): Promise<{ length: number, data: Uint8Array[] }> {
+    let receivedLength = 0;
+    const chunks: Uint8Array[] = [];
+    const reader = body.getReader();
+    
+    while (true) {
+      let timeoutId: NodeJS.Timeout;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reader.cancel().catch(() => {});
+          reject(new Error('Stream read timeout (tarpit detected)'));
+        }, 30000);
+      });
+
+      try {
+        const { done, value } = await Promise.race([reader.read(), timeoutPromise]);
+        if (done) break;
+        if (value) {
+          chunks.push(value);
+          receivedLength += value.length;
+        }
+      } finally {
+        clearTimeout(timeoutId!);
+      }
+    }
+    return { length: receivedLength, data: chunks };
+  }
+
+  private concatChunks(chunks: Uint8Array[], length: number): Uint8Array {
+    const buffer = new Uint8Array(length);
+    let position = 0;
+    for (const chunk of chunks) {
+      buffer.set(chunk, position);
+      position += chunk.length;
+    }
+    return buffer;
+  }
+
+  private checkCloudflareBlock(error: Error): void {
+    if (error.message.includes("403")) {
+      if (!this.isShuttingDown) {
+        this.isShuttingDown = true;
+        this.logger.error(`\nCRITICAL: Cloudflare block detected during download. Aborting!`);
+        process.kill(process.pid, "SIGINT");
+      }
+      throw error;
+    }
+  }
+
+  private async saveFile(filePath: string, buffer: Uint8Array, response: Response, item: DownloadItem): Promise<void> {
+    await Bun.write(filePath, buffer);
+    const lastModified = response.headers.get('Last-Modified');
+    const mtime = lastModified ? new Date(lastModified) : new Date(item.date);
+    if (!isNaN(mtime.getTime())) {
+      utimesSync(filePath, mtime, mtime);
+    }
   }
 
   async waitForIdle(): Promise<void> {

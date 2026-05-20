@@ -123,106 +123,29 @@ export class ApiScraper extends BaseScraper {
 
     if (!this.options.force && savedModified === post.modified) {
       if (this.options.download) {
-        // If we are in download mode, we still want to ensure images are downloaded
-        // even if the metadata is already in the DB.
-        const article = this.db.getArticleByPostId(postId);
-        if (article) {
-          article.images.forEach((img, idx) => {
-            this.downloader.download({
-              title: article.title,
-              date: article.date,
-              imageUrl: img,
-              index: idx,
-              postUrl: article.link,
-            }, this.options.verbose);
-          });
-        }
+        this.downloadExistingImages(postId);
       }
       return false;
     }
 
-    const images: string[] = [];
-
-    // Fetch media attachments (handle pagination because WP defaults to 10 per page)
+    let images: string[] = [];
     try {
-      let page = 1;
-      let hasMore = true;
-
-      while (hasMore) {
-        const mediaUrl = `https://presidenri.go.id/wp-json/wp/v2/media?parent=${postId}&per_page=100&page=${page}`;
-        const mediaResponse = await this.network.fetch(mediaUrl, { verbose: this.options.verbose });
-        
-        if (mediaResponse.ok) {
-          const mediaItems = await mediaResponse.json() as any[];
-          for (const item of mediaItems) {
-            const imageUrl = item.guid?.rendered;
-            if (imageUrl) {
-              images.push(imageUrl.replace("beta.presidenri.go.id", "presidenri.go.id"));
-            }
-          }
-          if (mediaItems.length < 100) {
-            hasMore = false;
-          } else {
-            page++;
-          }
-        } else {
-          hasMore = false; // Stop on 400 Bad Request or end of pages
-        }
-      }
-
-      // Check Featured Media
-      if (post.featured_media > 0) {
-        const featuredUrl = `https://presidenri.go.id/wp-json/wp/v2/media/${post.featured_media}`;
-        const featuredResponse = await this.network.fetch(featuredUrl, { verbose: this.options.verbose });
-        if (featuredResponse.ok) {
-          const item = await featuredResponse.json() as any;
-          const imageUrl = item.guid?.rendered;
-          if (imageUrl && !images.includes(imageUrl)) {
-            images.push(imageUrl.replace("beta.presidenri.go.id", "presidenri.go.id"));
-          }
-        }
-      }
-
-      // Fallback 1: Parse content.rendered for <img> tags
-      if (post.content?.rendered) {
-        if (this.options.verbose && images.length === 0) {
-          this.logger.info(`Primary media empty for post ${postId}, checking HTML content fallback...`);
-        }
-        const extracted = MediaParser.extractFromHtml(post.content.rendered);
-        extracted.forEach(img => {
-          if (!images.includes(img)) images.push(img);
-        });
-      }
-
-      // Fallback 2: Check Yoast SEO og_image
-      if (post.yoast_head_json?.og_image) {
-        if (this.options.verbose && images.length === 0) {
-          this.logger.info(`Still no images for post ${postId}, checking Yoast SEO fallback...`);
-        }
-        const ogImages = Array.isArray(post.yoast_head_json.og_image) 
-          ? post.yoast_head_json.og_image 
-          : [post.yoast_head_json.og_image];
-        
-        for (const og of ogImages) {
-          if (og.url && !images.includes(og.url)) {
-            images.push(og.url.replace("beta.presidenri.go.id", "presidenri.go.id"));
-          }
-        }
-      }
+      images = await this.extractImages(post);
     } catch (e) {
       if (this.options.verbose) {
         this.logger.warn(`Failed to fetch media for post ${postId}: ${e}`);
       }
-      throw e; // Throw so we don't accidentally overwrite the DB with partial fallback images
+      throw e;
     }
 
     const date = post.date.substring(0, 10);
     const description = decodeHtmlEntities(post.excerpt.rendered.replace(/<[^>]*>/g, "").trim());
+    const title = decodeHtmlEntities(post.title.rendered);
 
     this.db.saveArticle({
       post_id: postId,
       link: post.link,
-      title: decodeHtmlEntities(post.title.rendered),
+      title,
       date,
       description,
       tags: ["Foto"],
@@ -232,16 +155,100 @@ export class ApiScraper extends BaseScraper {
 
     if (this.options.download) {
       images.forEach((img, idx) => {
-        this.downloader.download({
-          title: decodeHtmlEntities(post.title.rendered),
-          date,
-          imageUrl: img,
-          index: idx,
-          postUrl: post.link,
-        }, this.options.verbose);
+        this.downloader.download({ title, date, imageUrl: img, index: idx, postUrl: post.link }, this.options.verbose);
       });
     }
 
     return true;
+  }
+
+  private downloadExistingImages(postId: number): void {
+    const article = this.db.getArticleByPostId(postId);
+    if (article) {
+      article.images.forEach((img, idx) => {
+        this.downloader.download({
+          title: article.title,
+          date: article.date,
+          imageUrl: img,
+          index: idx,
+          postUrl: article.link,
+        }, this.options.verbose);
+      });
+    }
+  }
+
+  private async extractImages(post: WordPressPost): Promise<string[]> {
+    const images: string[] = [];
+    
+    await this.getMediaAttachments(post.id, images);
+    await this.getFeaturedMedia(post.featured_media, images);
+    
+    if (images.length === 0) {
+      this.getHtmlFallbackImages(post, images);
+      if (images.length === 0) {
+        this.getYoastFallbackImages(post, images);
+      }
+    }
+    
+    return images;
+  }
+
+  private async getMediaAttachments(postId: number, images: string[]): Promise<void> {
+    let page = 1;
+    let hasMore = true;
+
+    while (hasMore) {
+      const mediaUrl = `https://presidenri.go.id/wp-json/wp/v2/media?parent=${postId}&per_page=100&page=${page}`;
+      const mediaResponse = await this.network.fetch(mediaUrl, { verbose: this.options.verbose });
+      
+      if (mediaResponse.ok) {
+        const mediaItems = await mediaResponse.json() as any[];
+        for (const item of mediaItems) {
+          const imageUrl = item.guid?.rendered;
+          if (imageUrl) images.push(imageUrl.replace("beta.presidenri.go.id", "presidenri.go.id"));
+        }
+        if (mediaItems.length < 100) hasMore = false;
+        else page++;
+      } else {
+        hasMore = false;
+      }
+    }
+  }
+
+  private async getFeaturedMedia(mediaId: number, images: string[]): Promise<void> {
+    if (mediaId <= 0) return;
+    const featuredUrl = `https://presidenri.go.id/wp-json/wp/v2/media/${mediaId}`;
+    const response = await this.network.fetch(featuredUrl, { verbose: this.options.verbose });
+    if (response.ok) {
+      const item = await response.json() as any;
+      const imageUrl = item.guid?.rendered;
+      if (imageUrl && !images.includes(imageUrl)) {
+        images.push(imageUrl.replace("beta.presidenri.go.id", "presidenri.go.id"));
+      }
+    }
+  }
+
+  private getHtmlFallbackImages(post: WordPressPost, images: string[]): void {
+    if (!post.content?.rendered) return;
+    if (this.options.verbose) this.logger.info(`Primary media empty for post ${post.id}, checking HTML content fallback...`);
+    const extracted = MediaParser.extractFromHtml(post.content.rendered);
+    extracted.forEach(img => {
+      if (!images.includes(img)) images.push(img);
+    });
+  }
+
+  private getYoastFallbackImages(post: WordPressPost, images: string[]): void {
+    if (!post.yoast_head_json?.og_image) return;
+    if (this.options.verbose) this.logger.info(`Still no images for post ${post.id}, checking Yoast SEO fallback...`);
+    
+    const ogImages = Array.isArray(post.yoast_head_json.og_image) 
+      ? post.yoast_head_json.og_image 
+      : [post.yoast_head_json.og_image];
+    
+    for (const og of ogImages) {
+      if (og.url && !images.includes(og.url)) {
+        images.push(og.url.replace("beta.presidenri.go.id", "presidenri.go.id"));
+      }
+    }
   }
 }
