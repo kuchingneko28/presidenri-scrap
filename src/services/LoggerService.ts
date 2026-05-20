@@ -99,7 +99,8 @@ export class LoggerService {
     const tail = '-'.repeat(Math.max(0, progress));
     const dots = '·'.repeat(Math.max(0, width - progress));
 
-    const pacmanChar = current % 2 === 0 ? 'C' : 'c';
+    const isMouthOpen = Math.floor(Date.now() / 250) % 2 === 0;
+    const pacmanChar = isMouthOpen ? 'C' : 'c';
     const pacman =
       percent === 1 ? chalk.hex(THEME.green)('C') : chalk.hex(THEME.yellow)(pacmanChar);
 
