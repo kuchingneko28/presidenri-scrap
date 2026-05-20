@@ -90,14 +90,14 @@ export class LoggerService {
     }
   }
 
-  getProgressBar(current: number, total: number, width: number = 20): string {
+  getProgressBar(current: number, total: number, width: number = 15): string {
     if (total <= 0) total = 100;
     const percent = Math.min(1, current / total);
     const progress = Math.round(width * percent);
 
     // Catppuccin Mocha Style
     const tail = '-'.repeat(Math.max(0, progress));
-    const dots = ' o'.repeat(Math.max(0, width - progress));
+    const dots = '·'.repeat(Math.max(0, width - progress));
 
     const pacmanChar = current % 2 === 0 ? 'C' : 'c';
     const pacman =
