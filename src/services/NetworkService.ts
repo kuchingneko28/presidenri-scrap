@@ -4,6 +4,8 @@ import { parseBrowserRequestHeaders, findHeader } from "../utils";
 import { Impit } from "impit";
 import type { LoggerService } from "./LoggerService";
 
+import type { RequestInit as ImpitRequestInit } from "impit";
+
 export class NetworkService {
   private headers: Record<string, string> = { ...HEADERS };
   private impit: Impit;
@@ -32,7 +34,7 @@ export class NetworkService {
     return { ...this.headers };
   }
 
-  async fetch(url: string, options: RequestInit & { verbose?: boolean, timeout?: number } = {}, retries = 3): Promise<Response> {
+  async fetch(url: string, options: ImpitRequestInit & { verbose?: boolean } = {}, retries = 3): Promise<Response> {
     if (!this.headersLoaded) await this.refreshHeaders();
 
     const headers: Record<string, string> = {
@@ -40,13 +42,10 @@ export class NetworkService {
       ...(options.headers as Record<string, string>),
     };
 
-    const mergedOptions: any = {
+    const mergedOptions: ImpitRequestInit = {
       ...options,
       headers,
     };
-    if (options.timeout !== undefined) {
-      mergedOptions.timeout = options.timeout;
-    }
 
     const customUA = findHeader(headers, "user-agent");
     
@@ -58,7 +57,7 @@ export class NetworkService {
 
     for (let i = 0; i < retries; i++) {
       try {
-        const response = await this.impit.fetch(url, mergedOptions as any) as unknown as Response;
+        const response = await this.impit.fetch(url, mergedOptions) as unknown as Response;
         
         if (response.ok || response.status === 400 || response.status === 404) {
           return response;
