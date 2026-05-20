@@ -32,7 +32,7 @@ export class NetworkService {
     return { ...this.headers };
   }
 
-  async fetch(url: string, options: RequestInit & { verbose?: boolean } = {}, retries = 3): Promise<Response> {
+  async fetch(url: string, options: RequestInit & { verbose?: boolean, timeout?: number } = {}, retries = 3): Promise<Response> {
     if (!this.headersLoaded) await this.refreshHeaders();
 
     const headers: Record<string, string> = {
@@ -40,10 +40,13 @@ export class NetworkService {
       ...(options.headers as Record<string, string>),
     };
 
-    const mergedOptions = {
+    const mergedOptions: any = {
       ...options,
       headers,
     };
+    if (options.timeout !== undefined) {
+      mergedOptions.timeout = options.timeout;
+    }
 
     const customUA = findHeader(headers, "user-agent");
     

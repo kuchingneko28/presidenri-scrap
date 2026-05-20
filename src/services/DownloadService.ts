@@ -81,7 +81,8 @@ export class DownloadService {
             response = await this.network.fetch(
               url,
               {
-                verbose
+                verbose,
+                timeout: 300000
               },
               1
             );
@@ -179,7 +180,8 @@ export class DownloadService {
         }
 
         if (!success || !response || !buffer) {
-          throw lastError || new Error('All URL candidates failed');
+          const attemptMsg = uniqueUrls.length > 1 ? `after trying ${uniqueUrls.length} URL variations` : 'URL';
+          throw new Error(`Failed ${attemptMsg}. Last error: ${lastError?.message || 'Unknown'}`);
         }
 
         await Bun.write(filePath, buffer);
