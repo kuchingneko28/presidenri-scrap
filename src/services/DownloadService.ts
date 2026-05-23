@@ -154,26 +154,37 @@ export class DownloadService {
     const chunks: Uint8Array[] = [];
     const reader = body.getReader();
     
-    while (true) {
-      let timeoutId: NodeJS.Timeout;
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => {
-          reader.cancel().catch(() => {});
-          reject(new Error('Stream read timeout (tarpit detected)'));
-        }, 30000);
-      });
+    let timeoutErr: Error | null = null;
+    let timeoutId: NodeJS.Timeout | null = null;
 
-      try {
-        const { done, value } = await Promise.race([reader.read(), timeoutPromise]);
+    const resetTimeout = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        timeoutErr = new Error('Stream read timeout (tarpit detected)');
+        reader.cancel().catch(() => {});
+      }, 30000);
+    };
+
+    resetTimeout();
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
         if (done) break;
         if (value) {
           chunks.push(value);
           receivedLength += value.length;
+          resetTimeout();
         }
-      } finally {
-        clearTimeout(timeoutId!);
       }
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
     }
+
+    if (timeoutErr) {
+      throw timeoutErr;
+    }
+
     return { length: receivedLength, data: chunks };
   }
 

@@ -6,6 +6,12 @@ import { parseDate, sanitize } from "../utils";
 import { MediaParser } from "../utils/MediaParser";
 import path from "node:path";
 
+interface LegacyArticleMeta {
+  link: string;
+  title: string;
+  dateText: string;
+}
+
 export class LegacyScraper extends BaseScraper {
   async scrape(): Promise<void> {
     const startPage = this.options.startPage || 1;
@@ -46,7 +52,7 @@ export class LegacyScraper extends BaseScraper {
           consecutiveEmptyPages = 0;
         }
 
-        const potentialArticles: any[] = [];
+        const potentialArticles: LegacyArticleMeta[] = [];
         articleNodes.each((_, el) => {
           const link = $(el).find(".title a").attr("href");
           const title = $(el).find(".title a").text().trim();
@@ -74,9 +80,9 @@ export class LegacyScraper extends BaseScraper {
             return;
           }
 
-          const existing = this.db.getArticleByLink(meta.link);
-          if (existing) {
-            if (this.options.download) {
+          if (this.options.download) {
+            const existing = this.db.getArticleByLink(meta.link);
+            if (existing) {
               existing.images.forEach((img, idx) => {
                 this.downloader.download({
                   title: existing.title,
@@ -86,8 +92,12 @@ export class LegacyScraper extends BaseScraper {
                   postUrl: existing.link,
                 }, this.options.verbose);
               });
+              return;
             }
-            return;
+          } else {
+            if (this.db.articleExistsByLink(meta.link)) {
+              return;
+            }
           }
 
           const saved = await this.processArticle(meta.link, meta.title, cleanDate || "");

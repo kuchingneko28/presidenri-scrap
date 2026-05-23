@@ -38,6 +38,7 @@ export class AppService {
         this.currentScraper.setShuttingDown(true);
       }
       this.downloader.setShuttingDown(true);
+      this.network.setShuttingDown(true);
     };
 
     process.on("SIGINT", () => handleExit("SIGINT"));

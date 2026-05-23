@@ -32,3 +32,5 @@ Thumbs.db
 tmp/
 *.log
 storage/data.db*
+storage/debug-html/
+storage/logs/

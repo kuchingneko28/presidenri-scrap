@@ -3,7 +3,7 @@ import { BaseScraper } from "./BaseScraper";
 import { DEFAULT_SINCE } from "../config/constants";
 import { decodeHtmlEntities } from "../utils";
 import { MediaParser } from "../utils/MediaParser";
-import type { WordPressPost } from "../types/wordpress";
+import type { WordPressPost, WordPressMedia } from "../types/wordpress";
 import type { DownloadItem } from "../types";
 
 export class ApiScraper extends BaseScraper {
@@ -18,7 +18,7 @@ export class ApiScraper extends BaseScraper {
 
     while (!stopScraper && !this.isShuttingDown) {
       this.updateStats({ page });
-      let url = `https://presidenri.go.id/wp-json/wp/v2/photo?per_page=${perPage}&page=${page}`;
+      let url = `https://presidenri.go.id/wp-json/wp/v2/photo?per_page=${perPage}&page=${page}&_embed`;
       if (this.options.before) {
         let beforeStr = String(this.options.before);
         if (beforeStr.length === 4) {
@@ -181,7 +181,19 @@ export class ApiScraper extends BaseScraper {
     const images: string[] = [];
     
     await this.getMediaAttachments(post.id, images);
-    await this.getFeaturedMedia(post.featured_media, images);
+    
+    // Try resolving featured media from embed first to avoid network request
+    const featuredUrl = post._embedded?.["wp:featuredmedia"]?.[0]?.source_url || 
+                        post._embedded?.["wp:featuredmedia"]?.[0]?.guid?.rendered;
+                        
+    if (featuredUrl) {
+      const cleanUrl = featuredUrl.replace("beta.presidenri.go.id", "presidenri.go.id");
+      if (!images.includes(cleanUrl)) {
+        images.push(cleanUrl);
+      }
+    } else {
+      await this.getFeaturedMedia(post.featured_media, images);
+    }
     
     if (images.length === 0) {
       this.getHtmlFallbackImages(post, images);
@@ -202,7 +214,7 @@ export class ApiScraper extends BaseScraper {
       const mediaResponse = await this.network.fetch(mediaUrl, { verbose: this.options.verbose });
       
       if (mediaResponse.ok) {
-        const mediaItems = await mediaResponse.json() as any[];
+        const mediaItems = await mediaResponse.json() as WordPressMedia[];
         for (const item of mediaItems) {
           const imageUrl = item.guid?.rendered;
           if (imageUrl) images.push(imageUrl.replace("beta.presidenri.go.id", "presidenri.go.id"));
@@ -220,7 +232,7 @@ export class ApiScraper extends BaseScraper {
     const featuredUrl = `https://presidenri.go.id/wp-json/wp/v2/media/${mediaId}`;
     const response = await this.network.fetch(featuredUrl, { verbose: this.options.verbose });
     if (response.ok) {
-      const item = await response.json() as any;
+      const item = await response.json() as WordPressMedia;
       const imageUrl = item.guid?.rendered;
       if (imageUrl && !images.includes(imageUrl)) {
         images.push(imageUrl.replace("beta.presidenri.go.id", "presidenri.go.id"));

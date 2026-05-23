@@ -1,5 +1,7 @@
 import chalk from 'chalk';
 import ora, { type Ora } from 'ora';
+import { mkdirSync, appendFileSync } from 'node:fs';
+import { LOGS_DIR, LOG_FILE } from '../config/constants';
 
 export const THEME = {
   rosewater: '#f5e0dc',
@@ -35,6 +37,20 @@ export class LoggerService {
   private lastUpdate = 0;
   private readonly THROTTLE_MS = 100;
 
+  constructor() {
+    try {
+      mkdirSync(LOGS_DIR, { recursive: true });
+    } catch (e) { /* ignore */ }
+  }
+
+  private writeToFile(message: string): void {
+    try {
+      const cleanMessage = message.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+      const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      appendFileSync(LOG_FILE, `[${timestamp}] ${cleanMessage}\n`, 'utf-8');
+    } catch (e) { /* ignore */ }
+  }
+
   log(message: string): void {
     if (this.spinner) {
       this.spinner.clear();
@@ -43,6 +59,7 @@ export class LoggerService {
     } else {
       console.log(message);
     }
+    this.writeToFile(message);
   }
 
   private logWithIcon(icon: string, color: string, message: string): void {

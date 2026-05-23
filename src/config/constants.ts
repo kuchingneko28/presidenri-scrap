@@ -7,3 +7,6 @@ export const DEBUG_HTML_DIR = path.join(STORAGE_DIR, 'debug-html');
 export const BROWSER_REQUEST_FILE = path.join(STORAGE_DIR, 'browser-request.curl');
 export const DEFAULT_SINCE = '2024-10-20';
 export const DOWNLOAD_DIR = path.join(PROJECT_ROOT, 'downloads');
+export const LOGS_DIR = path.join(STORAGE_DIR, 'logs');
+export const LOG_FILE = path.join(LOGS_DIR, 'scraper.log');
+
