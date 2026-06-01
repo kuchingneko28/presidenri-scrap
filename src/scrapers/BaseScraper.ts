@@ -1,3 +1,4 @@
+import { POLL_INTERVAL } from "../config/constants";
 import type { DatabaseService } from "../services/DatabaseService";
 import type { LoggerService } from "../services/LoggerService";
 import type { NetworkService } from "../services/NetworkService";
@@ -92,7 +93,7 @@ export abstract class BaseScraper {
   protected async waitForDownloads(): Promise<void> {
     while (this.downloader.getStats().queued > this.downloader.getStats().done + this.downloader.getStats().failed) {
       this.updateStats({});
-      await new Promise(r => setTimeout(r, 200));
+      await new Promise(r => setTimeout(r, POLL_INTERVAL));
     }
     this.updateStats({});
   }

@@ -34,3 +34,4 @@ tmp/
 storage/data.db*
 storage/debug-html/
 storage/logs/
+storage/research/

@@ -12,9 +12,17 @@ cli
   .option("-f, --force", "Ignore database check")
   .option("--per-page <n>", "Articles per API request", { default: 100 })
   .option("--filter <text>", "Only process articles containing this text")
-  .option("--search <text>", "Ask the server to only return articles matching this text")
-  .option("--since <date>", "Stop at this date (YYYY-MM-DD)", { default: DEFAULT_SINCE })
-  .option("--before <date>", "Start from this date going backwards (YYYY-MM-DD)")
+  .option(
+    "--search <text>",
+    "Ask the server to only return articles matching this text",
+  )
+  .option("--since <date>", "Stop at this date (YYYY-MM-DD)", {
+    default: DEFAULT_SINCE,
+  })
+  .option(
+    "--before <date>",
+    "Start from this date going backwards (YYYY-MM-DD)",
+  )
   .option("--limit <n>", "Maximum number of articles to process")
   .action(async (options) => {
     await app.runApiScraper({
@@ -40,7 +48,9 @@ cli
   .option("-u, --update", "Stop after 3 pages with no new articles")
   .option("--all", "Continue until the limit")
   .option("--filter <text>", "Only process articles containing this text")
-  .option("--since <date>", "Stop at this date (YYYY-MM-DD)", { default: DEFAULT_SINCE })
+  .option("--since <date>", "Stop at this date (YYYY-MM-DD)", {
+    default: DEFAULT_SINCE,
+  })
   .option("--limit <n>", "Maximum number of articles to process")
   .action(async (options) => {
     await app.runLegacyScraper({
@@ -56,11 +66,13 @@ cli
     process.exit(0);
   });
 
-cli.command("request", "Create storage/browser-request.curl if needed").action(async () => {
-  await app.initRequestFile();
-  app.shutdown();
-  process.exit(0);
-});
+cli
+  .command("request", "Create storage/browser-request.curl if needed")
+  .action(async () => {
+    await app.initRequestFile();
+    app.shutdown();
+    process.exit(0);
+  });
 
 cli.command("stats", "Show database article count").action(() => {
   app.showStats();
@@ -74,7 +86,7 @@ cli
   .option("--filter <text>", "Only process articles containing this text")
   .option("--limit <n>", "Maximum number of articles to process")
   .action(async (options) => {
-    await app.syncDownloads({ 
+    await app.syncDownloads({
       verbose: options.verbose,
       filter: options.filter,
       limit: options.limit ? parseInt(options.limit) : undefined,

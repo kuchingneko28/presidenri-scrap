@@ -11,10 +11,10 @@ import type { ScraperOptions } from "../types";
 import readline from "node:readline";
 
 export class AppService {
-  public db: DatabaseService;
-  public logger: LoggerService;
-  public network: NetworkService;
-  public downloader: DownloadService;
+  private db: DatabaseService;
+  private logger: LoggerService;
+  private network: NetworkService;
+  private downloader: DownloadService;
   private currentScraper: BaseScraper | null = null;
   private isShuttingDown = false;
 
@@ -56,29 +56,13 @@ export class AppService {
   }
 
   async runApiScraper(options: ScraperOptions): Promise<void> {
-    this.currentScraper = new ApiScraper(
-      options,
-      this.db,
-      this.logger,
-      this.network,
-      this.downloader
-    );
-    if (this.currentScraper) {
-      await this.currentScraper.scrape();
-    }
+    this.currentScraper = new ApiScraper(options, this.db, this.logger, this.network, this.downloader);
+    await this.currentScraper.scrape();
   }
 
   async runLegacyScraper(options: ScraperOptions): Promise<void> {
-    this.currentScraper = new LegacyScraper(
-      options,
-      this.db,
-      this.logger,
-      this.network,
-      this.downloader
-    );
-    if (this.currentScraper) {
-      await this.currentScraper.scrape();
-    }
+    this.currentScraper = new LegacyScraper(options, this.db, this.logger, this.network, this.downloader);
+    await this.currentScraper.scrape();
   }
 
   async initRequestFile(): Promise<void> {
@@ -96,16 +80,8 @@ export class AppService {
   }
 
   async syncDownloads(options: ScraperOptions): Promise<void> {
-    this.currentScraper = new SyncScraper(
-      options,
-      this.db,
-      this.logger,
-      this.network,
-      this.downloader
-    );
-    if (this.currentScraper) {
-      await this.currentScraper.scrape();
-    }
+    this.currentScraper = new SyncScraper(options, this.db, this.logger, this.network, this.downloader);
+    await this.currentScraper.scrape();
   }
 
   showStats(): void {

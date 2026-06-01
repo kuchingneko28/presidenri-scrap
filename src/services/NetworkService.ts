@@ -1,9 +1,8 @@
-import { BROWSER_REQUEST_FILE } from "../config/constants";
+import { BROWSER_REQUEST_FILE, DEFAULT_RETRIES } from "../config/constants";
 import { HEADERS } from "../config/headers";
 import { parseBrowserRequestHeaders, findHeader } from "../utils";
 import { Impit } from "impit";
 import type { LoggerService } from "./LoggerService";
-
 import type { RequestInit as ImpitRequestInit } from "impit";
 
 export class NetworkService {
@@ -41,7 +40,7 @@ export class NetworkService {
     return { ...this.headers };
   }
 
-  async fetch(url: string, options: ImpitRequestInit & { verbose?: boolean } = {}, retries = 3): Promise<Response> {
+  async fetch(url: string, options: ImpitRequestInit & { verbose?: boolean } = {}, retries = DEFAULT_RETRIES): Promise<Response> {
     if (!this.headersLoaded) await this.refreshHeaders();
 
     const headers: Record<string, string> = {

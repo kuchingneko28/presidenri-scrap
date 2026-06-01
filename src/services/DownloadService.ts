@@ -1,7 +1,7 @@
 import { mkdirSync, utimesSync } from 'node:fs';
 import path from 'node:path';
 import pLimit from 'p-limit';
-import { DOWNLOAD_DIR } from '../config/constants';
+import { DOWNLOAD_DIR, DOWNLOAD_CONCURRENCY, STREAM_TIMEOUT, MIN_FILE_SIZE } from '../config/constants';
 import type { DownloadItem } from '../types';
 import { sanitize } from '../utils';
 import { UrlGenerator } from '../utils/UrlGenerator';
@@ -9,7 +9,7 @@ import type { LoggerService } from './LoggerService';
 import type { NetworkService } from './NetworkService';
 
 export class DownloadService {
-  private limit = pLimit(5);
+  private limit!: ReturnType<typeof pLimit>;
   private stats = {
     queued: 0,
     active: 0,
@@ -22,7 +22,7 @@ export class DownloadService {
   constructor(
     private logger: LoggerService,
     private network: NetworkService,
-    concurrency: number = 5
+    concurrency: number = DOWNLOAD_CONCURRENCY
   ) {
     this.limit = pLimit(concurrency);
   }
@@ -125,7 +125,7 @@ export class DownloadService {
         }
 
         const buffer = this.concatChunks(chunks, receivedLength);
-        if (buffer.byteLength < 500) throw new Error('File too small');
+        if (buffer.byteLength < MIN_FILE_SIZE) throw new Error('File too small');
 
         return { response, buffer };
       } catch (error) {
@@ -162,7 +162,7 @@ export class DownloadService {
       timeoutId = setTimeout(() => {
         timeoutErr = new Error('Stream read timeout (tarpit detected)');
         reader.cancel().catch(() => {});
-      }, 30000);
+      }, STREAM_TIMEOUT);
     };
 
     resetTimeout();

@@ -19,6 +19,7 @@ export interface WordPressMedia {
     height: number;
     file: string;
     filesize: number;
+    original_image?: string;
     sizes: Record<string, {
       file: string;
       width: number;

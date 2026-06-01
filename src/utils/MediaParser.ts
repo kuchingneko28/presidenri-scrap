@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { WWW_DOMAIN, DOMAIN, BETA_DOMAIN } from "../config/constants";
 
 export class MediaParser {
   /**
@@ -39,7 +40,7 @@ export class MediaParser {
   /**
    * Extracts image URLs from a block of HTML content (like WordPress content.rendered).
    */
-  static extractFromHtml(html: string, baseUrl: string = "https://www.presidenri.go.id"): string[] {
+  static extractFromHtml(html: string, baseUrl: string = `https://${DOMAIN}`): string[] {
     const images: string[] = [];
     const $ = cheerio.load(html);
 
@@ -81,6 +82,6 @@ export class MediaParser {
   }
 
   private static cleanUrl(url: string): string {
-    return url.replace("beta.presidenri.go.id", "presidenri.go.id");
+    return url.replace(BETA_DOMAIN, DOMAIN);
   }
 }

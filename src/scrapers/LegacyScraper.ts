@@ -1,10 +1,9 @@
 import * as cheerio from "cheerio";
 import pLimit from "p-limit";
 import { BaseScraper } from "./BaseScraper";
-import { BASE_URL, DEFAULT_SINCE, DEBUG_HTML_DIR } from "../config/constants";
-import { parseDate, sanitize } from "../utils";
+import { BASE_URL, DOWNLOAD_CONCURRENCY } from "../config/constants";
+import { parseDate } from "../utils";
 import { MediaParser } from "../utils/MediaParser";
-import path from "node:path";
 
 interface LegacyArticleMeta {
   link: string;
@@ -60,7 +59,7 @@ export class LegacyScraper extends BaseScraper {
           if (link && title) potentialArticles.push({ link, title, dateText });
         });
 
-        const limit = pLimit(5);
+        const limit = pLimit(DOWNLOAD_CONCURRENCY);
         const pagePromises = potentialArticles.map(meta => limit(async () => {
           if (this.isShuttingDown) return;
           if (this.options.limit && this.stats.found >= this.options.limit) {
@@ -140,10 +139,6 @@ export class LegacyScraper extends BaseScraper {
   }
 
   private async processArticle(link: string, title: string, date: string): Promise<boolean> {
-    // Check if link already exists in DB
-    // (We need to add articleExistsByLink to DatabaseService or use a generic query)
-    // For now I'll just skip if I can't check easily or assume saveArticle handles REPLACE
-    
     try {
       const response = await this.network.fetch(link, { verbose: this.options.verbose });
       if (!response.ok) return false;
