@@ -35,6 +35,16 @@ export interface WordPressMedia {
   };
 }
 
+export interface YoastOGImage {
+  url: string;
+  width?: number;
+  height?: number;
+}
+
+export interface YoastHead {
+  og_image?: YoastOGImage[] | YoastOGImage;
+}
+
 export interface WordPressPost {
   id: number;
   date: string;
@@ -50,7 +60,7 @@ export interface WordPressPost {
   };
   featured_media: number;
   modified: string;
-  yoast_head_json?: Record<string, unknown> | null;
+  yoast_head_json?: YoastHead | null;
   _embedded?: {
     "wp:featuredmedia"?: WordPressMedia[];
   };

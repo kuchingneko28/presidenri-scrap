@@ -18,6 +18,9 @@ test_date.ts
 test_data.db
 presidenri-old-scrap/
 
+# Deepwork session data
+.slim/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -27,6 +30,9 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+.slim/
+.opencode/
+AGENTS.md
 
 # Temporary
 tmp/

@@ -18,6 +18,16 @@ export interface Article {
   modified?: string;
 }
 
+export interface DownloadStats {
+  queued: number;
+  active: number;
+  done: number;
+  failed: number;
+  bytesDownloaded: number;
+  bytesTotal: number;
+  pending: number;
+}
+
 export interface ScraperStats {
   page: number;
   found: number;

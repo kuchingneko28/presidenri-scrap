@@ -82,15 +82,7 @@ export class LegacyScraper extends BaseScraper {
           if (this.options.download) {
             const existing = this.db.getArticleByLink(meta.link);
             if (existing) {
-              existing.images.forEach((img, idx) => {
-                this.downloader.download({
-                  title: existing.title,
-                  date: existing.date,
-                  imageUrl: img,
-                  index: idx,
-                  postUrl: existing.link,
-                }, this.options.verbose);
-              });
+              this.queueDownloads(existing.title, existing.date, existing.images, existing.link);
               return;
             }
           } else {
@@ -164,20 +156,12 @@ export class LegacyScraper extends BaseScraper {
         });
 
         if (this.options.download) {
-          images.forEach((img, idx) => {
-            this.downloader.download({
-              title,
-              date,
-              imageUrl: img,
-              index: idx,
-              postUrl: link,
-            }, this.options.verbose);
-          });
+          this.queueDownloads(title, date, images, link);
         }
         return true;
       }
-    } catch (e) {
-      this.logger.error(`Failed to process article ${link}: ${e}`);
+    } catch (error) {
+      this.logger.error(`Failed to process article ${link}: ${error}`);
     }
     return false;
   }

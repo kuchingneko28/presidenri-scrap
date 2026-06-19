@@ -53,39 +53,30 @@ export class NetworkService {
       headers,
     };
 
-    const customUA = findHeader(headers, "user-agent");
-    
     let lastError: Error | null = null;
 
     if (options.verbose && this.logger) {
       this.logger.info(`Fetching: ${url}`);
     }
 
-    for (let i = 0; i < retries; i++) {
+    for (let attempt = 0; attempt < retries; attempt++) {
       try {
         const response = await this.impit.fetch(url, mergedOptions) as unknown as Response;
-        
+
         if (response.ok || response.status === 400 || response.status === 404) {
           return response;
         }
-        
+
+        // Route 403 into catch so all Cloudflare handling is in one place
         if (response.status === 403) {
-          const reloaded = await this.handle403Block(url, headers);
-          if (reloaded) {
-            mergedOptions.headers = {
-              ...this.headers,
-              ...(options.headers as Record<string, string>),
-            };
-            i = -1;
-            continue;
-          }
-          const hasCookie = !!findHeader(headers, "cookie");
-          throw new Error(`403 Forbidden - Cloudflare is still blocking. \nHeaders in use: ${Object.keys(headers).join(", ")}\nCookie present: ${hasCookie}\n\nPlease ensure your storage/browser-request.curl has a FRESH request from a logged-in browser session.`);
+          throw new Error("403 Forbidden");
         }
-        
-        await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
+
+        // Non-403 server error: backoff and retry
+        await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
       } catch (error) {
         lastError = error as Error;
+
         if (lastError.message.includes("403")) {
           const reloaded = await this.handle403Block(url, headers);
           if (reloaded) {
@@ -93,13 +84,16 @@ export class NetworkService {
               ...this.headers,
               ...(options.headers as Record<string, string>),
             };
-            i = -1;
+            attempt = -1; // Reset retry count after header reload
             continue;
           }
-          throw lastError;
+          // File not updated within timeout — give up
+          const hasCookie = !!findHeader(headers, "cookie");
+          throw new Error(`403 Forbidden - Cloudflare is still blocking. \nHeaders in use: ${Object.keys(headers).join(", ")}\nCookie present: ${hasCookie}\n\nPlease ensure your storage/browser-request.curl has a FRESH request from a logged-in browser session.`);
         }
-        
-        await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
+
+        // Non-403 error: backoff and retry
+        await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
       }
     }
 
@@ -118,10 +112,10 @@ export class NetworkService {
     const initialMtime = (await file.exists()) ? (await file.stat()).mtimeMs : 0;
     let updated = false;
 
-    // Poll for file changes
-    for (let poll = 0; poll < 300; poll++) { // Wait up to 5 minutes
+    // Poll for file changes (up to ~5 minutes)
+    for (let poll = 0; poll < 300; poll++) {
       if (this.isShuttingDown) break;
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       if (await file.exists()) {
         const stat = await file.stat();
         if (stat.mtimeMs > initialMtime) {

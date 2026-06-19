@@ -17,6 +17,7 @@ export const LOG_FILE = path.join(LOGS_DIR, 'scraper.log');
 export const DOWNLOAD_CONCURRENCY = 5;
 export const DEFAULT_RETRIES = 3;
 export const STREAM_TIMEOUT = 30_000;
+export const FETCH_TIMEOUT = 300_000;
 export const MIN_FILE_SIZE = 500;
 export const POLL_INTERVAL = 200;
 

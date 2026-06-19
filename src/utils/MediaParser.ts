@@ -53,7 +53,7 @@ export class MediaParser {
       }
       
       if (srcset) {
-        const parts = srcset.split(",").map(s => s.trim().split(" ")[0]);
+        const parts = srcset.split(",").map(part => part.trim().split(" ")[0]);
         for (const part of parts) {
           if (part) {
             images.push(this.resolveUrl(part, baseUrl));

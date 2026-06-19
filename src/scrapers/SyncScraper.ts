@@ -17,20 +17,12 @@ export class SyncScraper extends BaseScraper {
         continue;
       }
       
-      article.images.forEach((img, idx) => {
-        this.downloader.download({
-          title: article.title,
-          date: article.date,
-          imageUrl: img,
-          index: idx,
-          postUrl: article.link,
-        }, this.options.verbose);
-      });
+      this.queueDownloads(article.title, article.date, article.images, article.link);
       
       this.stats.found++;
       if (this.stats.found % 50 === 0) {
         this.updateStats({});
-        await new Promise(r => setTimeout(r, 0)); // Yield to event loop to let downloads start
+        await new Promise(resolve => setTimeout(resolve, 0)); // Yield to event loop to let downloads start
       }
     }
     

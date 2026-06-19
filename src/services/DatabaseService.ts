@@ -1,4 +1,4 @@
-import { Database } from "bun:sqlite";
+import { Database, type Statement } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { STORAGE_DIR } from "../config/constants";
@@ -22,10 +22,21 @@ interface RawArticle {
 export class DatabaseService {
   private db: Database;
 
+  // Pre-compiled statements — parsed once, reused for every call
+  private stmtArticleExistsByPostId!: Statement<unknown, [number]>;
+  private stmtArticleExistsByLink!: Statement<unknown, [string]>;
+  private stmtGetArticleModifiedDate!: Statement<{ modified: string | null }, [number]>;
+  private stmtGetArticleByPostId!: Statement<RawArticle, [number]>;
+  private stmtGetArticleByLink!: Statement<RawArticle, [string]>;
+  private stmtInsertArticle!: Statement<unknown, [string, string, string, string, string, string, number | null, string | null]>;
+  private stmtGetAllArticles!: Statement<RawArticle, []>;
+  private stmtGetStats!: Statement<{ count: number }, []>;
+
   constructor(dbPath: string = DEFAULT_DB_PATH) {
     mkdirSync(STORAGE_DIR, { recursive: true });
     this.db = new Database(dbPath, { create: true });
     this.init();
+    this.compileStatements();
   }
 
   private init(): void {
@@ -46,31 +57,43 @@ export class DatabaseService {
     )`);
 
     this.db.run("CREATE INDEX IF NOT EXISTS idx_articles_post_id ON articles (post_id);");
+    this.db.run("CREATE INDEX IF NOT EXISTS idx_articles_link ON articles (link);");
 
-    // Ensure columns exist (migration)
-    try {
-      this.db.run(`ALTER TABLE articles ADD COLUMN modified TEXT`);
-    } catch (e) { /* ignore */ }
-    
-    try {
-      this.db.run(`ALTER TABLE articles ADD COLUMN post_id INTEGER`);
-    } catch (e) { /* ignore */ }
+    // Column migrations (safe to re-run)
+    try { this.db.run("ALTER TABLE articles ADD COLUMN modified TEXT"); } catch { /* ignore */ }
+    try { this.db.run("ALTER TABLE articles ADD COLUMN post_id INTEGER"); } catch { /* ignore */ }
+  }
+
+  private compileStatements(): void {
+    this.stmtArticleExistsByPostId = this.db.query("SELECT 1 FROM articles WHERE post_id = ?");
+    this.stmtArticleExistsByLink = this.db.query("SELECT 1 FROM articles WHERE link = ?");
+    this.stmtGetArticleModifiedDate = this.db.query<{ modified: string | null }, [number]>(
+      "SELECT modified FROM articles WHERE post_id = ?"
+    );
+    this.stmtGetArticleByPostId = this.db.query<RawArticle, [number]>(
+      "SELECT * FROM articles WHERE post_id = ?"
+    );
+    this.stmtGetArticleByLink = this.db.query<RawArticle, [string]>(
+      "SELECT * FROM articles WHERE link = ?"
+    );
+    this.stmtInsertArticle = this.db.query(
+      `INSERT OR REPLACE INTO articles (link, title, date, description, tags, images, post_id, modified)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    this.stmtGetAllArticles = this.db.query<RawArticle, []>("SELECT * FROM articles");
+    this.stmtGetStats = this.db.query<{ count: number }, []>("SELECT COUNT(*) as count FROM articles");
   }
 
   articleExistsByPostId(postId: number): boolean {
-    const query = this.db.query("SELECT 1 FROM articles WHERE post_id = ?");
-    return !!query.get(postId);
+    return !!this.stmtArticleExistsByPostId.get(postId);
   }
 
   articleExistsByLink(link: string): boolean {
-    const query = this.db.query("SELECT 1 FROM articles WHERE link = ?");
-    return !!query.get(link);
+    return !!this.stmtArticleExistsByLink.get(link);
   }
 
   getArticleModifiedDate(postId: number): string | null {
-    const result = this.db.query<{ modified: string | null }, [number]>(
-      "SELECT modified FROM articles WHERE post_id = ?"
-    ).get(postId);
+    const result = this.stmtGetArticleModifiedDate.get(postId);
     return result ? result.modified : null;
   }
 
@@ -88,44 +111,34 @@ export class DatabaseService {
   }
 
   getArticleByPostId(postId: number): Article | null {
-    const result = this.db.query<RawArticle, [number]>(
-      "SELECT * FROM articles WHERE post_id = ?"
-    ).get(postId);
+    const result = this.stmtGetArticleByPostId.get(postId);
     return result ? this.mapRawArticleToArticle(result) : null;
   }
 
   getArticleByLink(link: string): Article | null {
-    const result = this.db.query<RawArticle, [string]>(
-      "SELECT * FROM articles WHERE link = ?"
-    ).get(link);
+    const result = this.stmtGetArticleByLink.get(link);
     return result ? this.mapRawArticleToArticle(result) : null;
   }
 
   saveArticle(article: Article): void {
-    this.db.run(
-      `INSERT OR REPLACE INTO articles (link, title, date, description, tags, images, post_id, modified)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        article.link,
-        article.title,
-        article.date,
-        article.description,
-        JSON.stringify(article.tags),
-        JSON.stringify(article.images),
-        article.post_id ?? null,
-        article.modified ?? null,
-      ]
+    this.stmtInsertArticle.run(
+      article.link,
+      article.title,
+      article.date,
+      article.description,
+      JSON.stringify(article.tags),
+      JSON.stringify(article.images),
+      article.post_id ?? null,
+      article.modified ?? null,
     );
   }
 
   getAllArticles(): Article[] {
-    const results = this.db.query<RawArticle, []>("SELECT * FROM articles").all();
-    return results.map(result => this.mapRawArticleToArticle(result));
+    return this.stmtGetAllArticles.all().map((row: RawArticle) => this.mapRawArticleToArticle(row));
   }
 
   getStats(): number {
-    const result = this.db.query<{ count: number }, []>("SELECT COUNT(*) as count FROM articles").get();
-    return result?.count || 0;
+    return this.stmtGetStats.get()?.count || 0;
   }
 
   close(): void {

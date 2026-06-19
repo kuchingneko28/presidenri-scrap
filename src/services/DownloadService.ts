@@ -1,8 +1,8 @@
 import { mkdirSync, utimesSync } from 'node:fs';
 import path from 'node:path';
 import pLimit from 'p-limit';
-import { DOWNLOAD_DIR, DOWNLOAD_CONCURRENCY, STREAM_TIMEOUT, MIN_FILE_SIZE } from '../config/constants';
-import type { DownloadItem } from '../types';
+import { DOWNLOAD_DIR, DOWNLOAD_CONCURRENCY, STREAM_TIMEOUT, FETCH_TIMEOUT, MIN_FILE_SIZE } from '../config/constants';
+import type { DownloadItem, DownloadStats } from '../types';
 import { sanitize } from '../utils';
 import { UrlGenerator } from '../utils/UrlGenerator';
 import type { LoggerService } from './LoggerService';
@@ -37,14 +37,21 @@ export class DownloadService {
     this.stats.queued++;
 
     return this.limit(async () => {
-      if (this.isShuttingDown) return;
+      if (this.isShuttingDown) {
+        this.stats.done++; // Prevent waitForDownloads hanging forever
+        return;
+      }
       this.stats.active++;
       try {
         const filePath = this.getFilePath(item);
         if (await this.checkFileExists(filePath, verbose, item)) return;
 
-        const { response, buffer } = await this.fetchWithFallbacks(item, verbose);
+        const { response, buffer, contentLength, receivedLength } = await this.fetchWithFallbacks(item, verbose);
         await this.saveFile(filePath, buffer, response, item);
+
+        // Count bytes only on success — no rollback needed
+        this.stats.bytesDownloaded += receivedLength;
+        this.stats.bytesTotal += Math.max(contentLength, receivedLength);
 
         if (verbose) this.logger.success(`Downloaded: ${path.basename(filePath)}`);
         this.stats.done++;
@@ -72,67 +79,48 @@ export class DownloadService {
     const file = Bun.file(filePath);
     if (await file.exists()) {
       if (verbose) this.logger.info(`Skipping existing: ${path.basename(filePath)}`);
-      await new Promise(r => setTimeout(r, 1));
       this.stats.done++;
       return true;
     }
     return false;
   }
 
-  private async fetchWithFallbacks(item: DownloadItem, verbose: boolean): Promise<{ response: Response, buffer: Uint8Array }> {
+  private async fetchWithFallbacks(item: DownloadItem, verbose: boolean): Promise<{
+    response: Response;
+    buffer: Uint8Array;
+    contentLength: number;
+    receivedLength: number;
+  }> {
     const uniqueUrls = UrlGenerator.generateCandidates(item.imageUrl);
     let lastError: Error | undefined;
 
     for (const url of uniqueUrls) {
-      let currentBytesTotal = 0;
-      let currentBytesDownloaded = 0;
       try {
         if (verbose && url !== item.imageUrl) this.logger.info(`Trying fallback: ${url}`);
-        
-        const response = await this.network.fetch(url, { verbose, timeout: 300000 }, 1);
+
+        const response = await this.network.fetch(url, { verbose, timeout: FETCH_TIMEOUT }, 1);
         this.validateResponse(response);
 
         const contentLength = parseInt(response.headers.get('Content-Length') || '0', 10);
-        if (contentLength > 0) {
-          currentBytesTotal = contentLength;
-          this.stats.bytesTotal += contentLength;
-        }
-
         let receivedLength = 0;
         let chunks: Uint8Array[] = [];
 
-        try {
-          if (response.body) {
-            const { length, data } = await this.readStream(response.body);
-            receivedLength = length;
-            chunks = data;
-          } else {
-            const ab = await response.arrayBuffer();
-            receivedLength = ab.byteLength;
-            chunks = [new Uint8Array(ab)];
-          }
-          currentBytesDownloaded += receivedLength;
-          this.stats.bytesDownloaded += receivedLength;
-          if (contentLength === 0) {
-            currentBytesTotal = receivedLength;
-            this.stats.bytesTotal += receivedLength;
-          }
-        } finally {
-          if (contentLength === 0 && receivedLength > 0 && response.body) {
-            currentBytesTotal = receivedLength;
-            this.stats.bytesTotal += receivedLength;
-          }
+        if (response.body) {
+          const result = await this.readStream(response.body);
+          receivedLength = result.length;
+          chunks = result.data;
+        } else {
+          const ab = await response.arrayBuffer();
+          receivedLength = ab.byteLength;
+          chunks = [new Uint8Array(ab)];
         }
 
         const buffer = this.concatChunks(chunks, receivedLength);
         if (buffer.byteLength < MIN_FILE_SIZE) throw new Error('File too small');
 
-        return { response, buffer };
+        return { response, buffer, contentLength, receivedLength };
       } catch (error) {
-        this.stats.bytesTotal -= currentBytesTotal;
-        this.stats.bytesDownloaded -= currentBytesDownloaded;
         lastError = error as Error;
-        
         if (verbose) this.logger.warn(`Fetch failed for ${url}: ${lastError.message}`);
         this.checkCloudflareBlock(lastError);
       }
@@ -149,11 +137,11 @@ export class DownloadService {
     }
   }
 
-  private async readStream(body: ReadableStream<Uint8Array>): Promise<{ length: number, data: Uint8Array[] }> {
+  private async readStream(body: ReadableStream<Uint8Array>): Promise<{ length: number; data: Uint8Array[] }> {
     let receivedLength = 0;
     const chunks: Uint8Array[] = [];
     const reader = body.getReader();
-    
+
     let timeoutErr: Error | null = null;
     let timeoutId: NodeJS.Timeout | null = null;
 
@@ -220,11 +208,11 @@ export class DownloadService {
 
   async waitForIdle(): Promise<void> {
     while (this.stats.queued > this.stats.done + this.stats.failed) {
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
 
-  getStats() {
+  getStats(): DownloadStats {
     return {
       ...this.stats,
       pending: this.limit.pendingCount,

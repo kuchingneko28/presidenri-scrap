@@ -1,6 +1,5 @@
-import pLimit from "p-limit";
 import { BaseScraper } from "./BaseScraper";
-import { API_BASE, WWW_DOMAIN, BETA_DOMAIN, DOWNLOAD_CONCURRENCY } from "../config/constants";
+import { API_BASE, WWW_DOMAIN, BETA_DOMAIN } from "../config/constants";
 import { decodeHtmlEntities } from "../utils";
 import { MediaParser } from "../utils/MediaParser";
 import type { WordPressPost, WordPressMedia } from "../types/wordpress";
@@ -8,79 +7,54 @@ import type { WordPressPost, WordPressMedia } from "../types/wordpress";
 export class ApiScraper extends BaseScraper {
   async scrape(): Promise<void> {
     const perPage = this.options.perPage || 100;
-    let page = this.options.startPage || 1;
-    let stopScraper = false;
 
     this.stats.state = "scraping";
     this.logger.startSpinner("Starting API Scrape...");
 
-    while (!stopScraper && !this.isShuttingDown) {
-      this.updateStats({ page });
-      let url = `${API_BASE}/photo?per_page=${perPage}&page=${page}&_embed`;
-      if (this.options.before) {
-        let beforeStr = String(this.options.before);
-        if (beforeStr.length === 4) beforeStr += "-12-31";
-        url += `&before=${beforeStr}T23:59:59`;
-      }
-      if (this.options.search) {
-        url += `&search=${encodeURIComponent(this.options.search)}`;
-      }
+    await this.paginate<WordPressPost>(
+      async (page) => {
+        let url = `${API_BASE}/photo?per_page=${perPage}&page=${page}&_embed`;
+        if (this.options.before) {
+          let beforeStr = String(this.options.before);
+          if (beforeStr.length === 4) beforeStr += "-12-31";
+          url += `&before=${beforeStr}T23:59:59`;
+        }
+        if (this.options.search) {
+          url += `&search=${encodeURIComponent(this.options.search)}`;
+        }
 
-      try {
         const response = await this.network.fetch(url, { verbose: this.options.verbose });
         if (!response.ok) {
-          if (response.status === 400) break;
+          if (response.status === 400) return null;
           throw new Error(`API returned ${response.status}`);
         }
 
         const total = response.headers.get("X-WP-Total");
-        if (total) this.stats.total = parseInt(total);
-
         const posts = (await response.json()) as WordPressPost[];
-        if (posts.length === 0) break;
+        return { items: posts, total: total ? parseInt(total) : undefined };
+      },
+      async (post) => {
+        if (this.options.since && post.date < this.options.since) return false;
 
-        const limit = pLimit(DOWNLOAD_CONCURRENCY);
-        const pagePromises = posts.map(post => limit(async () => {
-          if (this.isShuttingDown) return;
-          if (this.options.limit && this.stats.found >= this.options.limit) {
-            stopScraper = true;
-            return;
-          }
-          if (this.options.since && post.date < this.options.since) {
-            stopScraper = true;
-            return;
-          }
+        const title = decodeHtmlEntities(post.title.rendered);
+        const excerpt = decodeHtmlEntities(post.excerpt.rendered);
+        if (!this.matchesFilter(title) && !this.matchesFilter(excerpt)) return false;
 
-          const title = decodeHtmlEntities(post.title.rendered);
-          const excerpt = decodeHtmlEntities(post.excerpt.rendered);
-          if (!this.matchesFilter(title) && !this.matchesFilter(excerpt)) return;
-
-          const saved = await this.processPost(post);
-          if (saved) {
-            this.stats.found++;
-            if (this.options.verbose) {
-              this.logger.success(`Saved: ${decodeHtmlEntities(post.title.rendered)}`);
-            }
-            if (this.stats.found % 10 === 0) this.updateStats({});
-          } else if (this.options.verbose) {
-            this.logger.info(`Skipped (already up to date): ${decodeHtmlEntities(post.title.rendered)}`);
-          }
-        }));
-
-        await Promise.all(pagePromises);
-        page++;
-      } catch (error) {
-        this.logger.error(`Error on page ${page}: ${error}`);
-        break;
-      }
-    }
+        const saved = await this.processPost(post);
+        if (saved && this.options.verbose) {
+          this.logger.success(`Saved: ${title}`);
+        } else if (!saved && this.options.verbose) {
+          this.logger.info(`Skipped (already up to date): ${title}`);
+        }
+        return saved;
+      },
+    );
 
     this.stats.state = "downloading";
     this.updateStats({});
-    
-    // Wait for all downloads to finish if we are in download mode
+
     if (this.options.download) {
-        await this.waitForDownloads();
+      await this.waitForDownloads();
     }
 
     this.logger.stopSpinner();
@@ -101,11 +75,11 @@ export class ApiScraper extends BaseScraper {
     let images: string[] = [];
     try {
       images = await this.extractImages(post);
-    } catch (e) {
+    } catch (error) {
       if (this.options.verbose) {
-        this.logger.warn(`Failed to fetch media for post ${postId}: ${e}`);
+        this.logger.warn(`Failed to fetch media for post ${postId}: ${error}`);
       }
-      throw e;
+      throw error;
     }
 
     const date = post.date.substring(0, 10);
@@ -124,9 +98,7 @@ export class ApiScraper extends BaseScraper {
     });
 
     if (this.options.download) {
-      images.forEach((img, idx) => {
-        this.downloader.download({ title, date, imageUrl: img, index: idx, postUrl: post.link }, this.options.verbose);
-      });
+      this.queueDownloads(title, date, images, post.link);
     }
 
     return true;
@@ -135,15 +107,7 @@ export class ApiScraper extends BaseScraper {
   private downloadExistingImages(postId: number): void {
     const article = this.db.getArticleByPostId(postId);
     if (article) {
-      article.images.forEach((img, idx) => {
-        this.downloader.download({
-          title: article.title,
-          date: article.date,
-          imageUrl: img,
-          index: idx,
-          postUrl: article.link,
-        }, this.options.verbose);
-      });
+      this.queueDownloads(article.title, article.date, article.images, article.link);
     }
   }
 
@@ -239,9 +203,9 @@ export class ApiScraper extends BaseScraper {
       ? post.yoast_head_json.og_image 
       : [post.yoast_head_json.og_image];
     
-    for (const og of ogImages) {
-      if (og.url && !images.includes(og.url)) {
-        images.push(og.url.replace(BETA_DOMAIN, WWW_DOMAIN));
+    for (const ogImage of ogImages) {
+      if (ogImage.url && !images.includes(ogImage.url)) {
+        images.push(ogImage.url.replace(BETA_DOMAIN, WWW_DOMAIN));
       }
     }
   }

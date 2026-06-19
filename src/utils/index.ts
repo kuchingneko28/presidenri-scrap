@@ -4,7 +4,7 @@ import { HEADERS } from "../config/headers";
 export function parseDate(str: string | null): string | null {
   if (!str) return null;
   const clean = str.replace(/WIB|WITA|WIT/g, "").trim();
-  const m: Record<string, string> = {
+  const monthMap: Record<string, string> = {
     Januari: "01", Februari: "02", Maret: "03", April: "04", Mei: "05", Juni: "06",
     Juli: "07", Agustus: "08", September: "09", Oktober: "10", November: "11", Desember: "12",
   };
@@ -13,13 +13,13 @@ export function parseDate(str: string | null): string | null {
   if (!datePart) return null;
 
   const [day, monthName, year, time = "00:00"] = datePart.split(" ");
-  if (!day || !monthName || !m[monthName]) return null;
+  if (!day || !monthName || !monthMap[monthName]) return null;
 
-  return `${year || new Date().getFullYear()}-${m[monthName]}-${day.padStart(2, "0")}T${time}:00`;
+  return `${year || new Date().getFullYear()}-${monthMap[monthName]}-${day.padStart(2, "0")}T${time}:00`;
 }
 
-export function sanitize(s: string): string {
-  return s
+export function sanitize(name: string): string {
+  return name
     .replace(/[<>:"/\\|?*]+/g, "")
     .substring(0, 100)
     .trim();

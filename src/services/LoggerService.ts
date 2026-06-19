@@ -2,35 +2,7 @@ import chalk from 'chalk';
 import ora, { type Ora } from 'ora';
 import { mkdirSync, appendFileSync } from 'node:fs';
 import { LOGS_DIR, LOG_FILE } from '../config/constants';
-
-export const THEME = {
-  rosewater: '#f5e0dc',
-  flamingo: '#f2cdcd',
-  pink: '#f5c2e7',
-  mauve: '#cba6f7',
-  red: '#f38ba8',
-  maroon: '#eba0ac',
-  peach: '#fab387',
-  yellow: '#f9e2af',
-  green: '#a6e3a1',
-  teal: '#94e2d5',
-  sky: '#89dceb',
-  sapphire: '#74c7ec',
-  blue: '#89b4fa',
-  lavender: '#b4befe',
-  text: '#cdd6f4',
-  subtext1: '#bac2de',
-  subtext0: '#a6adc8',
-  overlay2: '#9399b2',
-  overlay1: '#7f849c',
-  overlay0: '#6c7086',
-  surface2: '#585b70',
-  surface1: '#45475a',
-  surface0: '#313244',
-  base: '#1e1e2e',
-  mantle: '#181825',
-  crust: '#11111b',
-};
+import { THEME } from '../config/theme';
 
 export class LoggerService {
   private spinner: Ora | null = null;
@@ -40,7 +12,7 @@ export class LoggerService {
   constructor() {
     try {
       mkdirSync(LOGS_DIR, { recursive: true });
-    } catch (e) { /* ignore */ }
+    } catch (error) { /* ignore */ }
   }
 
   private writeToFile(message: string): void {
@@ -48,7 +20,7 @@ export class LoggerService {
       const cleanMessage = message.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
       const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
       appendFileSync(LOG_FILE, `[${timestamp}] ${cleanMessage}\n`, 'utf-8');
-    } catch (e) { /* ignore */ }
+    } catch (error) { /* ignore */ }
   }
 
   log(message: string): void {
