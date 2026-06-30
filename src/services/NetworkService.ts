@@ -4,6 +4,15 @@ import { parseBrowserRequestHeaders, findHeader } from "../utils";
 import { Impit } from "impit";
 import type { LoggerService } from "./LoggerService";
 import type { RequestInit as ImpitRequestInit } from "impit";
+import { existsSync } from "node:fs";
+import { readFile, stat } from "node:fs/promises";
+
+export class CloudflareBlockError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+    this.name = "CloudflareBlockError";
+  }
+}
 
 export class NetworkService {
   private headers: Record<string, string> = { ...HEADERS };
@@ -11,6 +20,7 @@ export class NetworkService {
   private headersLoaded = false;
   private headersLastLoadedTime = 0;
   private isShuttingDown = false;
+  private activeBlockResolution: Promise<boolean> | null = null;
 
   constructor(private logger?: LoggerService) {
     this.impit = new Impit({
@@ -23,9 +33,8 @@ export class NetworkService {
   }
 
   async refreshHeaders(): Promise<void> {
-    const file = Bun.file(BROWSER_REQUEST_FILE);
-    if (await file.exists()) {
-      const content = await file.text();
+    if (existsSync(BROWSER_REQUEST_FILE)) {
+      const content = await readFile(BROWSER_REQUEST_FILE, "utf8");
       const browserHeaders = parseBrowserRequestHeaders(content);
       if (Object.keys(browserHeaders).length > 0) {
         this.headers = browserHeaders;
@@ -61,7 +70,17 @@ export class NetworkService {
 
     for (let attempt = 0; attempt < retries; attempt++) {
       try {
-        const response = await this.impit.fetch(url, mergedOptions) as unknown as Response;
+        const impitResponse = await this.impit.fetch(url, mergedOptions);
+        const hasNoBody = [101, 204, 205, 304].includes(impitResponse.status) || mergedOptions.method === "HEAD";
+        const response = new Response(hasNoBody ? null : impitResponse.body, {
+          status: impitResponse.status,
+          statusText: impitResponse.statusText,
+          headers: impitResponse.headers,
+        });
+        Object.defineProperty(response, "url", {
+          value: impitResponse.url,
+          writable: false,
+        });
 
         if (response.ok || response.status === 400 || response.status === 404) {
           return response;
@@ -89,7 +108,10 @@ export class NetworkService {
           }
           // File not updated within timeout — give up
           const hasCookie = !!findHeader(headers, "cookie");
-          throw new Error(`403 Forbidden - Cloudflare is still blocking. \nHeaders in use: ${Object.keys(headers).join(", ")}\nCookie present: ${hasCookie}\n\nPlease ensure your storage/browser-request.curl has a FRESH request from a logged-in browser session.`);
+          throw new CloudflareBlockError(
+            403,
+            `403 Forbidden - Cloudflare is still blocking. \nHeaders in use: ${Object.keys(headers).join(", ")}\nCookie present: ${hasCookie}\n\nPlease ensure your storage/browser-request.curl has a FRESH request from a logged-in browser session.`
+          );
         }
 
         // Non-403 error: backoff and retry
@@ -101,38 +123,55 @@ export class NetworkService {
   }
 
   private async handle403Block(url: string, currentHeaders: Record<string, string>): Promise<boolean> {
-    if (this.logger) {
-      this.logger.warn(`\n⚠️ Cloudflare block (403) detected on: ${url}`);
-      this.logger.info(`Please copy a fresh request as cURL from your browser and paste it into:`);
-      this.logger.info(`  ${BROWSER_REQUEST_FILE}`);
-      this.logger.info(`Waiting for file update to resume...`);
+    if (this.activeBlockResolution) {
+      return this.activeBlockResolution;
     }
 
-    const file = Bun.file(BROWSER_REQUEST_FILE);
-    const initialMtime = (await file.exists()) ? (await file.stat()).mtimeMs : 0;
-    let updated = false;
+    this.activeBlockResolution = (async () => {
+      if (this.logger) {
+        this.logger.warn(`\n⚠️ Cloudflare block (403) detected on: ${url}`);
+        this.logger.info(`Please copy a fresh request as cURL from your browser and paste it into:`);
+        this.logger.info(`  ${BROWSER_REQUEST_FILE}`);
+        this.logger.info(`Waiting for file update to resume...`);
+      }
 
-    // Poll for file changes (up to ~5 minutes)
-    for (let poll = 0; poll < 300; poll++) {
-      if (this.isShuttingDown) break;
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      if (await file.exists()) {
-        const stat = await file.stat();
-        if (stat.mtimeMs > initialMtime) {
-          updated = true;
-          if (stat.mtimeMs > this.headersLastLoadedTime) {
-            if (this.logger) this.logger.success(`\n✓ Detected browser-request.curl update. Reloading headers...`);
-            await this.refreshHeaders();
-          }
-          break;
+      let initialMtime = 0;
+      if (existsSync(BROWSER_REQUEST_FILE)) {
+        try {
+          const fileStat = await stat(BROWSER_REQUEST_FILE);
+          initialMtime = fileStat.mtimeMs;
+        } catch {}
+      }
+      let updated = false;
+
+      // Poll for file changes (up to ~5 minutes)
+      for (let poll = 0; poll < 300; poll++) {
+        if (this.isShuttingDown) break;
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (existsSync(BROWSER_REQUEST_FILE)) {
+          try {
+            const fileStat = await stat(BROWSER_REQUEST_FILE);
+            if (fileStat.mtimeMs > initialMtime) {
+              updated = true;
+              if (fileStat.mtimeMs > this.headersLastLoadedTime) {
+                if (this.logger) this.logger.success(`\n✓ Detected browser-request.curl update. Reloading headers...`);
+                await this.refreshHeaders();
+              }
+              break;
+            }
+          } catch {}
         }
       }
-    }
 
-    if (updated) {
-      if (this.logger) this.logger.info(`Resuming fetch with fresh headers...`);
-      return true;
-    }
-    return false;
+      this.activeBlockResolution = null;
+
+      if (updated) {
+        if (this.logger) this.logger.info(`Resuming fetch with fresh headers...`);
+        return true;
+      }
+      return false;
+    })();
+
+    return this.activeBlockResolution;
   }
 }

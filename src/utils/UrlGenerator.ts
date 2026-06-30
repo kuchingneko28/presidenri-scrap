@@ -1,6 +1,17 @@
-import { DOMAIN, WWW_DOMAIN } from "../config/constants";
+import { DOMAIN, WWW_DOMAIN, BETA_DOMAIN } from "../config/constants";
 
 export class UrlGenerator {
+  static normalizeUrl(url: string): string {
+    let clean = url;
+    if (clean.includes(BETA_DOMAIN)) {
+      clean = clean.replace(BETA_DOMAIN, WWW_DOMAIN);
+    } else if (clean.includes(DOMAIN) && !clean.includes("www.")) {
+      clean = clean.replace(DOMAIN, WWW_DOMAIN);
+    }
+    clean = clean.replace("/assets/uploads/", "/uploads/");
+    return clean;
+  }
+
   static generateCandidates(originalUrl: string): string[] {
     const baseUrl = originalUrl.includes(DOMAIN) && !originalUrl.includes("www.")
       ? originalUrl.replace(DOMAIN, WWW_DOMAIN)
@@ -32,8 +43,8 @@ export class UrlGenerator {
     }
 
     // Strip size suffixes (-1024x768), -scaled, and cache-busters (-e\d+)
-    for (const u of [...urls]) {
-      let current = u;
+    for (const urlCandidate of [...urls]) {
+      let current = urlCandidate;
       while (true) {
         const next = stripSuffix(current);
         if (next === current) break;
@@ -42,6 +53,6 @@ export class UrlGenerator {
       }
     }
 
-    return urls;
+    return urls.sort((a, b) => a.length - b.length || a.localeCompare(b));
   }
 }

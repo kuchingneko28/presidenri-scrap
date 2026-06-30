@@ -2,6 +2,7 @@ import { BaseScraper } from "./BaseScraper";
 import { API_BASE, WWW_DOMAIN, BETA_DOMAIN } from "../config/constants";
 import { decodeHtmlEntities } from "../utils";
 import { MediaParser } from "../utils/MediaParser";
+import { UrlGenerator } from "../utils/UrlGenerator";
 import type { WordPressPost, WordPressMedia } from "../types/wordpress";
 
 export class ApiScraper extends BaseScraper {
@@ -34,8 +35,6 @@ export class ApiScraper extends BaseScraper {
         return { items: posts, total: total ? parseInt(total) : undefined };
       },
       async (post) => {
-        if (this.options.since && post.date < this.options.since) return false;
-
         const title = decodeHtmlEntities(post.title.rendered);
         const excerpt = decodeHtmlEntities(post.excerpt.rendered);
         if (!this.matchesFilter(title) && !this.matchesFilter(excerpt)) return false;
@@ -48,6 +47,9 @@ export class ApiScraper extends BaseScraper {
         }
         return saved;
       },
+      {
+        getItemDate: (post) => post.date,
+      }
     );
 
     this.stats.state = "downloading";
@@ -121,7 +123,7 @@ export class ApiScraper extends BaseScraper {
                         post._embedded?.["wp:featuredmedia"]?.[0]?.guid?.rendered;
                         
     if (featuredUrl) {
-      const cleanUrl = featuredUrl.replace(BETA_DOMAIN, WWW_DOMAIN).replace("/assets/uploads/", "/uploads/");
+      const cleanUrl = UrlGenerator.normalizeUrl(featuredUrl);
       if (!images.includes(cleanUrl)) images.push(cleanUrl);
     } else {
       await this.getFeaturedMedia(post.featured_media, images);
@@ -148,9 +150,7 @@ export class ApiScraper extends BaseScraper {
     // guid.rendered often has /assets/uploads/ which always 404s — strip /assets/
     const imageUrl = item.guid?.rendered;
     if (imageUrl) {
-      const clean = imageUrl
-        .replace(BETA_DOMAIN, WWW_DOMAIN)
-        .replace("/assets/uploads/", "/uploads/");
+      const clean = UrlGenerator.normalizeUrl(imageUrl);
       if (!images.includes(clean)) images.push(clean);
     }
   }

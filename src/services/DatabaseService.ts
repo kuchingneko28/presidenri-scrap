@@ -30,6 +30,7 @@ export class DatabaseService {
   private stmtGetArticleByLink!: Statement<RawArticle, [string]>;
   private stmtInsertArticle!: Statement<unknown, [string, string, string, string, string, string, number | null, string | null]>;
   private stmtGetAllArticles!: Statement<RawArticle, []>;
+  private stmtGetArticlesPaged!: Statement<RawArticle, [number, number]>;
   private stmtGetStats!: Statement<{ count: number }, []>;
 
   constructor(dbPath: string = DEFAULT_DB_PATH) {
@@ -60,8 +61,22 @@ export class DatabaseService {
     this.db.run("CREATE INDEX IF NOT EXISTS idx_articles_link ON articles (link);");
 
     // Column migrations (safe to re-run)
-    try { this.db.run("ALTER TABLE articles ADD COLUMN modified TEXT"); } catch { /* ignore */ }
-    try { this.db.run("ALTER TABLE articles ADD COLUMN post_id INTEGER"); } catch { /* ignore */ }
+    try {
+      this.db.run("ALTER TABLE articles ADD COLUMN modified TEXT");
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      if (!msg.includes("duplicate column name")) {
+        console.error(`Migration failed for column 'modified': ${msg}`);
+      }
+    }
+    try {
+      this.db.run("ALTER TABLE articles ADD COLUMN post_id INTEGER");
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      if (!msg.includes("duplicate column name")) {
+        console.error(`Migration failed for column 'post_id': ${msg}`);
+      }
+    }
   }
 
   private compileStatements(): void {
@@ -77,10 +92,21 @@ export class DatabaseService {
       "SELECT * FROM articles WHERE link = ?"
     );
     this.stmtInsertArticle = this.db.query(
-      `INSERT OR REPLACE INTO articles (link, title, date, description, tags, images, post_id, modified)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO articles (link, title, date, description, tags, images, post_id, modified)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(link) DO UPDATE SET
+         title = excluded.title,
+         date = excluded.date,
+         description = excluded.description,
+         tags = excluded.tags,
+         images = excluded.images,
+          post_id = excluded.post_id,
+          modified = excluded.modified`
     );
     this.stmtGetAllArticles = this.db.query<RawArticle, []>("SELECT * FROM articles");
+    this.stmtGetArticlesPaged = this.db.query<RawArticle, [number, number]>(
+      "SELECT * FROM articles LIMIT ? OFFSET ?"
+    );
     this.stmtGetStats = this.db.query<{ count: number }, []>("SELECT COUNT(*) as count FROM articles");
   }
 
@@ -97,6 +123,15 @@ export class DatabaseService {
     return result ? result.modified : null;
   }
 
+  private safeParseJsonArray(str: string): string[] {
+    try {
+      const parsed = JSON.parse(str);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
   private mapRawArticleToArticle(result: RawArticle): Article {
     return {
       post_id: result.post_id,
@@ -104,8 +139,8 @@ export class DatabaseService {
       title: result.title,
       date: result.date,
       description: result.description,
-      tags: JSON.parse(result.tags),
-      images: JSON.parse(result.images),
+      tags: this.safeParseJsonArray(result.tags),
+      images: this.safeParseJsonArray(result.images),
       modified: result.modified || undefined,
     };
   }
@@ -135,6 +170,10 @@ export class DatabaseService {
 
   getAllArticles(): Article[] {
     return this.stmtGetAllArticles.all().map((row: RawArticle) => this.mapRawArticleToArticle(row));
+  }
+
+  getArticlesPaged(limit: number, offset: number): Article[] {
+    return this.stmtGetArticlesPaged.all(limit, offset).map((row: RawArticle) => this.mapRawArticleToArticle(row));
   }
 
   getStats(): number {

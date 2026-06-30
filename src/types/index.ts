@@ -26,6 +26,7 @@ export interface DownloadStats {
   bytesDownloaded: number;
   bytesTotal: number;
   pending: number;
+  skipped: number;
 }
 
 export interface ScraperStats {
@@ -41,6 +42,7 @@ export interface ScraperStats {
   bytesTotal: number;
   total?: number;
   state: "idle" | "scraping" | "syncing" | "downloading" | "completed" | "error";
+  skipped: number;
 }
 
 export interface ScraperOptions {
@@ -50,6 +52,7 @@ export interface ScraperOptions {
   perPage?: number;
   startPage?: number;
   stopAfterEmptyPages?: number;
+  all?: boolean;
   filter?: string;
   search?: string;
   since?: string;

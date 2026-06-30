@@ -1,4 +1,5 @@
-import { mkdirSync, utimesSync } from 'node:fs';
+import { mkdirSync, utimesSync, existsSync } from 'node:fs';
+import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import pLimit from 'p-limit';
 import { DOWNLOAD_DIR, DOWNLOAD_CONCURRENCY, STREAM_TIMEOUT, FETCH_TIMEOUT, MIN_FILE_SIZE } from '../config/constants';
@@ -7,6 +8,7 @@ import { sanitize } from '../utils';
 import { UrlGenerator } from '../utils/UrlGenerator';
 import type { LoggerService } from './LoggerService';
 import type { NetworkService } from './NetworkService';
+import { CloudflareBlockError } from './NetworkService';
 
 export class DownloadService {
   private limit!: ReturnType<typeof pLimit>;
@@ -17,6 +19,7 @@ export class DownloadService {
     failed: 0,
     bytesDownloaded: 0,
     bytesTotal: 0,
+    skipped: 0,
   };
 
   constructor(
@@ -30,6 +33,9 @@ export class DownloadService {
   private isShuttingDown = false;
 
   public setShuttingDown(value: boolean): void {
+    if (value && !this.isShuttingDown) {
+      this.logger.warn("Shutdown requested. Skipping remaining downloads...");
+    }
     this.isShuttingDown = value;
   }
 
@@ -38,7 +44,7 @@ export class DownloadService {
 
     return this.limit(async () => {
       if (this.isShuttingDown) {
-        this.stats.done++; // Prevent waitForDownloads hanging forever
+        this.stats.skipped++; // Prevent waitForDownloads hanging forever
         return;
       }
       this.stats.active++;
@@ -76,8 +82,7 @@ export class DownloadService {
   }
 
   private async checkFileExists(filePath: string, verbose: boolean, item: DownloadItem): Promise<boolean> {
-    const file = Bun.file(filePath);
-    if (await file.exists()) {
+    if (existsSync(filePath)) {
       if (verbose) this.logger.info(`Skipping existing: ${path.basename(filePath)}`);
       this.stats.done++;
       return true;
@@ -144,6 +149,7 @@ export class DownloadService {
 
     let timeoutErr: Error | null = null;
     let timeoutId: NodeJS.Timeout | null = null;
+    let absoluteTimeoutId: NodeJS.Timeout | null = null;
 
     const resetTimeout = () => {
       if (timeoutId) clearTimeout(timeoutId);
@@ -154,6 +160,11 @@ export class DownloadService {
     };
 
     resetTimeout();
+
+    absoluteTimeoutId = setTimeout(() => {
+      timeoutErr = new Error('Absolute stream download timeout exceeded');
+      reader.cancel().catch(() => {});
+    }, FETCH_TIMEOUT);
 
     try {
       while (true) {
@@ -167,6 +178,7 @@ export class DownloadService {
       }
     } finally {
       if (timeoutId) clearTimeout(timeoutId);
+      if (absoluteTimeoutId) clearTimeout(absoluteTimeoutId);
     }
 
     if (timeoutErr) {
@@ -186,19 +198,23 @@ export class DownloadService {
     return buffer;
   }
 
+  public getShuttingDown(): boolean {
+    return this.isShuttingDown;
+  }
+
   private checkCloudflareBlock(error: Error): void {
-    if (error.message.includes("403")) {
+    if (error instanceof CloudflareBlockError) {
       if (!this.isShuttingDown) {
         this.isShuttingDown = true;
+        this.network.setShuttingDown(true);
         this.logger.error(`\nCRITICAL: Cloudflare block detected during download. Aborting!`);
-        process.kill(process.pid, "SIGINT");
       }
       throw error;
     }
   }
 
   private async saveFile(filePath: string, buffer: Uint8Array, response: Response, item: DownloadItem): Promise<void> {
-    await Bun.write(filePath, buffer);
+    await writeFile(filePath, buffer);
     const lastModified = response.headers.get('Last-Modified');
     const mtime = lastModified ? new Date(lastModified) : new Date(item.date);
     if (!isNaN(mtime.getTime())) {
@@ -207,7 +223,7 @@ export class DownloadService {
   }
 
   async waitForIdle(): Promise<void> {
-    while (this.stats.queued > this.stats.done + this.stats.failed) {
+    while (this.stats.queued > this.stats.done + this.stats.failed + this.stats.skipped) {
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }

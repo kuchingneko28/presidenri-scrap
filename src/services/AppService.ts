@@ -9,6 +9,8 @@ import { SyncScraper } from "../scrapers/SyncScraper";
 import { BROWSER_REQUEST_FILE } from "../config/constants";
 import type { ScraperOptions } from "../types";
 import readline from "node:readline";
+import { existsSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
 
 export class AppService {
   private db: DatabaseService;
@@ -43,6 +45,7 @@ export class AppService {
 
     process.on("SIGINT", () => handleExit("SIGINT"));
     process.on("SIGTERM", () => handleExit("SIGTERM"));
+    process.on("exit", () => this.shutdown());
 
     if (process.stdin.isTTY) {
       readline.emitKeypressEvents(process.stdin);
@@ -66,9 +69,8 @@ export class AppService {
   }
 
   async initRequestFile(): Promise<void> {
-    const file = Bun.file(BROWSER_REQUEST_FILE);
-    if (!(await file.exists())) {
-      await Bun.write(
+    if (!existsSync(BROWSER_REQUEST_FILE)) {
+      await writeFile(
         BROWSER_REQUEST_FILE,
         `# Paste your curl command here\n# Make sure to use the "Copy as cURL" feature from your browser's developer tools`
       );

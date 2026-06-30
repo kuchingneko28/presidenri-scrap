@@ -38,7 +38,7 @@ describe("MediaParser", () => {
   test("cleans beta domain to standard domain", () => {
     const html = `<img src="https://beta.presidenri.go.id/test.png" />`;
     const images = MediaParser.extractFromHtml(html, baseUrl);
-    expect(images).toContain("https://presidenri.go.id/test.png");
+    expect(images).toContain("https://www.presidenri.go.id/test.png");
     expect(images).not.toContain("https://beta.presidenri.go.id/test.png");
   });
 });

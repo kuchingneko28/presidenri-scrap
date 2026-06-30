@@ -19,10 +19,11 @@ export function parseDate(str: string | null): string | null {
 }
 
 export function sanitize(name: string): string {
-  return name
+  const sanitized = name
     .replace(/[<>:"/\\|?*]+/g, "")
     .substring(0, 100)
     .trim();
+  return sanitized || "untitled";
 }
 
 export function parseBrowserRequestHeaders(
@@ -31,11 +32,11 @@ export function parseBrowserRequestHeaders(
   const headers: Record<string, string> = {};
 
   const tokens = tokenizeCurl(content);
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i];
+  for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex++) {
+    const token = tokens[tokenIndex];
     if (!token) continue;
 
-    const header = readOptionValue(tokens, i, ["-H", "--header"]);
+    const header = readOptionValue(tokens, tokenIndex, ["-H", "--header"]);
     if (!header) continue;
 
     const separator = header.indexOf(":");
@@ -74,8 +75,8 @@ function readLastOptionValue(
   names: string[],
 ): string | undefined {
   let value: string | undefined;
-  for (let i = 0; i < tokens.length; i++) {
-    value = readOptionValue(tokens, i, names) ?? value;
+  for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex++) {
+    value = readOptionValue(tokens, tokenIndex, names) ?? value;
   }
   return value;
 }
@@ -102,15 +103,15 @@ function tokenizeCurl(content: string): string[] {
   let token = "";
   let quote: "'" | '"' | null = null;
 
-  for (let i = 0; i < input.length; i++) {
-    const char = input[i];
+  for (let charIndex = 0; charIndex < input.length; charIndex++) {
+    const char = input[charIndex];
     if (!char) continue;
 
     if (quote) {
       if (char === quote) {
         quote = null;
-      } else if (char === "\\" && quote === '"' && input[i + 1]) {
-        token += input[++i];
+      } else if (char === "\\" && quote === '"' && input[charIndex + 1]) {
+        token += input[++charIndex];
       } else {
         token += char;
       }
@@ -138,10 +139,67 @@ function tokenizeCurl(content: string): string[] {
 }
 
 export function decodeHtmlEntities(text: string): string {
-  return text
-    .replace(/&#8211;/g, "–")
-    .replace(/&#8217;/g, "'")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'");
+  const NAMED_ENTITIES: Record<string, string> = {
+    "&amp;": "&",
+    "&quot;": '"',
+    "&apos;": "'",
+    "&lt;": "<",
+    "&gt;": ">",
+    "&nbsp;": " ",
+    "&ndash;": "–",
+    "&mdash;": "—",
+    "&lsquo;": "‘",
+    "&rsquo;": "’",
+    "&ldquo;": "“",
+    "&rdquo;": "”",
+  };
+
+  let decoded = text.replace(/&[a-zA-Z0-9]+;/g, (match) => NAMED_ENTITIES[match] || match);
+  
+  decoded = decoded.replace(/&#([0-9]+);/g, (_, dec) => {
+    try {
+      return String.fromCodePoint(parseInt(dec, 10));
+    } catch {
+      return "";
+    }
+  });
+
+  decoded = decoded.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+    try {
+      return String.fromCodePoint(parseInt(hex, 16));
+    } catch {
+      return "";
+    }
+  });
+
+  return decoded;
+}
+
+export function parseIntOrUndefined(val: unknown): number | undefined {
+  if (val === undefined || val === null || val === "") return undefined;
+  const parsed = parseInt(String(val), 10);
+  return isNaN(parsed) ? undefined : parsed;
+}
+
+export function validatePositiveInteger(val: unknown, name: string): number | undefined {
+  const parsed = parseIntOrUndefined(val);
+  if (parsed !== undefined) {
+    if (parsed <= 0) {
+      throw new Error(`Option --${name} must be a positive integer.`);
+    }
+  }
+  return parsed;
+}
+
+export function validateDateFormat(val: unknown, name: string): string | undefined {
+  if (val === undefined || val === null || val === "") return undefined;
+  const str = String(val);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    throw new Error(`Option --${name} must be in YYYY-MM-DD format.`);
+  }
+  const date = new Date(str);
+  if (isNaN(date.getTime())) {
+    throw new Error(`Option --${name} must be a valid date.`);
+  }
+  return str;
 }

@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
-import { WWW_DOMAIN, DOMAIN, BETA_DOMAIN } from "../config/constants";
+import { UrlGenerator } from "./UrlGenerator";
+import { DOMAIN } from "../config/constants";
 
 export class MediaParser {
   /**
@@ -9,11 +10,11 @@ export class MediaParser {
     const images: string[] = [];
     const seen = new Set<string>();
 
-    $(".flexslider .slides li img").each((_, el) => {
-      const src = $(el).attr("src") || $(el).attr("data-src");
+    $(".flexslider .slides li img").each((_, imgElement) => {
+      const src = $(imgElement).attr("src") || $(imgElement).attr("data-src");
       if (src) {
         const url = this.resolveUrl(src, baseUrl);
-        if (!seen.has(url)) {
+        if (url && !seen.has(url)) {
           seen.add(url);
           images.push(url);
         }
@@ -22,11 +23,11 @@ export class MediaParser {
 
     // Fallback to fancybox links
     if (images.length === 0) {
-      $("a[data-fancybox]").each((_, el) => {
-        const href = $(el).attr("href");
+      $("a[data-fancybox]").each((_, anchorElement) => {
+        const href = $(anchorElement).attr("href");
         if (href) {
           const url = this.resolveUrl(href, baseUrl);
-          if (!seen.has(url)) {
+          if (url && !seen.has(url)) {
             seen.add(url);
             images.push(url);
           }
@@ -49,23 +50,32 @@ export class MediaParser {
       const srcset = $(img).attr("srcset") || $(img).attr("data-srcset");
       
       if (src) {
-        images.push(this.resolveUrl(src, baseUrl));
+        const url = this.resolveUrl(src, baseUrl);
+        if (url) {
+          images.push(url);
+        }
       }
       
       if (srcset) {
         const parts = srcset.split(",").map(part => part.trim().split(" ")[0]);
         for (const part of parts) {
           if (part) {
-            images.push(this.resolveUrl(part, baseUrl));
+            const url = this.resolveUrl(part, baseUrl);
+            if (url) {
+              images.push(url);
+            }
           }
         }
       }
     });
 
-    $("a").each((_, a) => {
-      const href = $(a).attr("href");
+    $("a").each((_, anchorElement) => {
+      const href = $(anchorElement).attr("href");
       if (href && href.match(/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i)) {
-        images.push(this.resolveUrl(href, baseUrl));
+        const url = this.resolveUrl(href, baseUrl);
+        if (url) {
+          images.push(url);
+        }
       }
     });
 
@@ -77,11 +87,11 @@ export class MediaParser {
       const resolved = new URL(url, baseUrl).toString();
       return this.cleanUrl(resolved);
     } catch {
-      return this.cleanUrl(url);
+      return "";
     }
   }
 
   private static cleanUrl(url: string): string {
-    return url.replace(BETA_DOMAIN, DOMAIN);
+    return UrlGenerator.normalizeUrl(url);
   }
 }
