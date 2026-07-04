@@ -23,6 +23,7 @@ export function registerApiCommand(cli: CAC, app: AppService): void {
       "Start from this date going backwards (YYYY-MM-DD)",
     )
     .option("--limit <n>", "Maximum number of articles to process")
+    .option("--dry-run", "Simulate run without writing to database or downloads")
     .action(async (options) => {
       try {
         const perPage = validatePositiveInteger(options.perPage, "per-page");
@@ -40,6 +41,7 @@ export function registerApiCommand(cli: CAC, app: AppService): void {
           since,
           before,
           limit,
+          dryRun: options.dryRun,
         });
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));

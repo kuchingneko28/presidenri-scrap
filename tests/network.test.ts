@@ -3,10 +3,11 @@ import { unlink } from "node:fs/promises";
 import { BROWSER_REQUEST_FILE } from "../src/config/constants";
 import { NetworkService } from "../src/services/NetworkService";
 import { LoggerService } from "../src/services/LoggerService";
+import type { Server } from "bun";
 
 describe("NetworkService - 403 Hot Reload Integration", () => {
   let originalCurlContent: string | null = null;
-  let server: any;
+  let server: Server<unknown> | undefined;
   let port: number;
 
   beforeAll(async () => {
@@ -32,7 +33,10 @@ describe("NetworkService - 403 Hot Reload Integration", () => {
         return new Response("Not Found", { status: 404 });
       },
     });
-    port = server.port;
+    if (!server) {
+      throw new Error("Server failed to start");
+    }
+    port = server.port ?? 0;
   });
 
   afterAll(async () => {

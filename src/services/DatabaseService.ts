@@ -32,12 +32,17 @@ export class DatabaseService {
   private stmtGetAllArticles!: Statement<RawArticle, []>;
   private stmtGetArticlesPaged!: Statement<RawArticle, [number, number]>;
   private stmtGetStats!: Statement<{ count: number }, []>;
+  private dryRun = false;
 
   constructor(dbPath: string = DEFAULT_DB_PATH) {
     mkdirSync(STORAGE_DIR, { recursive: true });
     this.db = new Database(dbPath, { create: true });
     this.init();
     this.compileStatements();
+  }
+
+  public setDryRun(value: boolean): void {
+    this.dryRun = value;
   }
 
   private init(): void {
@@ -156,6 +161,9 @@ export class DatabaseService {
   }
 
   saveArticle(article: Article): void {
+    if (this.dryRun) {
+      return;
+    }
     this.stmtInsertArticle.run(
       article.link,
       article.title,

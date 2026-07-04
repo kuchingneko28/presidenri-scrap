@@ -20,6 +20,7 @@ presidenri-old-scrap/
 
 # Deepwork session data
 .slim/
+session-*.md
 
 # OS
 .DS_Store

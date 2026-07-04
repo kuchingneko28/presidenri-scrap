@@ -16,6 +16,7 @@ export function registerLegacyCommand(cli: CAC, app: AppService): void {
       default: DEFAULT_SINCE,
     })
     .option("--limit <n>", "Maximum number of articles to process")
+    .option("--dry-run", "Simulate run without writing to database or downloads")
     .action(async (options) => {
       try {
         const startPage = validatePositiveInteger(options.page, "page");
@@ -31,6 +32,7 @@ export function registerLegacyCommand(cli: CAC, app: AppService): void {
           filter: options.filter,
           since,
           limit,
+          dryRun: options.dryRun,
         });
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));

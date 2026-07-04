@@ -4,8 +4,10 @@ import { parseBrowserRequestHeaders, findHeader } from "../utils";
 import { Impit } from "impit";
 import type { LoggerService } from "./LoggerService";
 import type { RequestInit as ImpitRequestInit } from "impit";
-import { existsSync } from "node:fs";
+import { existsSync, watch } from "node:fs";
+import type { FSWatcher } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
+import * as path from "node:path";
 
 export class CloudflareBlockError extends Error {
   constructor(public status: number, message: string) {
@@ -144,23 +146,50 @@ export class NetworkService {
       }
       let updated = false;
 
-      // Poll for file changes (up to ~5 minutes)
-      for (let poll = 0; poll < 300; poll++) {
-        if (this.isShuttingDown) break;
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        if (existsSync(BROWSER_REQUEST_FILE)) {
-          try {
-            const fileStat = await stat(BROWSER_REQUEST_FILE);
-            if (fileStat.mtimeMs > initialMtime) {
-              updated = true;
-              if (fileStat.mtimeMs > this.headersLastLoadedTime) {
-                if (this.logger) this.logger.success(`\n✓ Detected browser-request.curl update. Reloading headers...`);
-                await this.refreshHeaders();
+      // Set up fs.watch on the directory to monitor browser-request.curl
+      const dir = path.dirname(BROWSER_REQUEST_FILE);
+      const filename = path.basename(BROWSER_REQUEST_FILE);
+      let watcher: FSWatcher | undefined;
+
+      const fileUpdatedPromise = new Promise<void>((resolve) => {
+        try {
+          watcher = watch(dir, async (eventType: string | null, changedFilename: string | null) => {
+            if (changedFilename === filename || !changedFilename) {
+              if (existsSync(BROWSER_REQUEST_FILE)) {
+                try {
+                  const fileStat = await stat(BROWSER_REQUEST_FILE);
+                  if (fileStat.mtimeMs > initialMtime) {
+                    if (fileStat.mtimeMs > this.headersLastLoadedTime) {
+                      if (this.logger) this.logger.success(`\n✓ Detected browser-request.curl update. Reloading headers...`);
+                      await this.refreshHeaders();
+                    }
+                    updated = true;
+                    resolve();
+                  }
+                } catch {}
               }
-              break;
             }
-          } catch {}
+          });
+        } catch (e) {
+          // Fallback if watch fails
         }
+      });
+
+      // Race watcher update against a 5-minute timeout (300,000 ms) and shutdown flag polling
+      const timeoutPromise = new Promise<void>((resolve) => setTimeout(resolve, 300000));
+      
+      const checkShutdown = async () => {
+        while (!updated && !this.isShuttingDown) {
+          await new Promise((r) => setTimeout(r, 500));
+        }
+      };
+
+      await Promise.race([fileUpdatedPromise, timeoutPromise, checkShutdown()]);
+
+      if (watcher) {
+        try {
+          watcher.close();
+        } catch {}
       }
 
       this.activeBlockResolution = null;

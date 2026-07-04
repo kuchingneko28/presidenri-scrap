@@ -8,6 +8,7 @@ export function registerSyncCommand(cli: CAC, app: AppService): void {
     .option("-v, --verbose", "Detailed logging")
     .option("--filter <text>", "Only process articles containing this text")
     .option("--limit <n>", "Maximum number of articles to process")
+    .option("--dry-run", "Simulate run without writing or downloading files")
     .action(async (options) => {
       try {
         const limit = validatePositiveInteger(options.limit, "limit");
@@ -15,6 +16,7 @@ export function registerSyncCommand(cli: CAC, app: AppService): void {
           verbose: options.verbose,
           filter: options.filter,
           limit,
+          dryRun: options.dryRun,
         });
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));

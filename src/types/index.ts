@@ -58,4 +58,5 @@ export interface ScraperOptions {
   since?: string;
   before?: string;
   limit?: number;
+  dryRun?: boolean;
 }

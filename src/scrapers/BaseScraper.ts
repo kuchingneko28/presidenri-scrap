@@ -29,7 +29,12 @@ export abstract class BaseScraper {
     protected logger: LoggerService,
     protected network: NetworkService,
     protected downloader: DownloadService
-  ) {}
+  ) {
+    if (options.dryRun) {
+      db.setDryRun(true);
+      downloader.setDryRun(true);
+    }
+  }
 
   public setShuttingDown(value: boolean): void {
     this.isShuttingDown = value;

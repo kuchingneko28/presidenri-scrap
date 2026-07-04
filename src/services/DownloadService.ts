@@ -31,6 +31,11 @@ export class DownloadService {
   }
 
   private isShuttingDown = false;
+  private dryRun = false;
+
+  public setDryRun(value: boolean): void {
+    this.dryRun = value;
+  }
 
   public setShuttingDown(value: boolean): void {
     if (value && !this.isShuttingDown) {
@@ -51,6 +56,12 @@ export class DownloadService {
       try {
         const filePath = this.getFilePath(item);
         if (await this.checkFileExists(filePath, verbose, item)) return;
+
+        if (this.dryRun) {
+          if (verbose) this.logger.info(`[Dry-Run] Would download: ${item.imageUrl} -> ${filePath}`);
+          this.stats.done++;
+          return;
+        }
 
         const { response, buffer, contentLength, receivedLength } = await this.fetchWithFallbacks(item, verbose);
         await this.saveFile(filePath, buffer, response, item);
@@ -73,7 +84,9 @@ export class DownloadService {
   private getFilePath(item: DownloadItem): string {
     const folderName = `${item.date} - ${sanitize(item.title)}`;
     const folderPath = path.join(DOWNLOAD_DIR, folderName);
-    mkdirSync(folderPath, { recursive: true });
+    if (!this.dryRun) {
+      mkdirSync(folderPath, { recursive: true });
+    }
 
     const urlPath = item.imageUrl.split('?')[0] || '';
     const originalFileName = path.basename(urlPath);

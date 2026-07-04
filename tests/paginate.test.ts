@@ -70,7 +70,7 @@ describe("BaseScraper - paginate", () => {
       downloader
     );
 
-    const processedItems: any[] = [];
+    const processedItems: { id: number; date: string }[] = [];
     await scraper.testPaginate(
       async (page) => {
         if (page === 1) {
@@ -94,6 +94,6 @@ describe("BaseScraper - paginate", () => {
     );
 
     expect(processedItems.length).toBe(1);
-    expect(processedItems[0].id).toBe(1);
+    expect(processedItems[0]?.id).toBe(1);
   });
 });
