@@ -23,14 +23,14 @@ export function parseDate(str: string | null): ISODateString | null {
   const datePart = (clean.includes(",") ? clean.split(",")[1] : clean)?.trim();
   if (!datePart) return null;
 
-  const [day, monthName, year, time = "00:00"] = datePart.split(" ");
-  if (!day || !monthName) return null;
+  const [dayString, monthName, year, time = "00:00"] = datePart.split(" ");
+  if (!dayString || !monthName) return null;
 
   const monthCode = MONTH_MAP[monthName];
   if (!monthCode) return null;
 
   const resolvedYear = year || String(new Date().getFullYear());
-  const resolvedDay = day.padStart(2, "0");
+  const resolvedDay = dayString.padStart(2, "0");
 
   return `${resolvedYear}-${monthCode}-${resolvedDay}T${time}:00` as ISODateString;
 }

@@ -1,20 +1,21 @@
 import { describe, expect, test } from "bun:test";
 import { parseDate } from "../src/utils";
+import type { ISODateString } from "../src/utils/date";
 
 describe("Date Parser", () => {
   test("parses standard format (DayName, DD Month YYYY)", () => {
     const raw = "Senin, 9 Desember 2019 16:31 WIB";
-    expect(parseDate(raw)).toBe("2019-12-09T16:31:00");
+    expect(parseDate(raw)).toBe("2019-12-09T16:31:00" as ISODateString);
   });
 
   test("parses format without day name (DD Month YYYY)", () => {
     const raw = "9 Desember 2019 16:31 WIB";
-    expect(parseDate(raw)).toBe("2019-12-09T16:31:00");
+    expect(parseDate(raw)).toBe("2019-12-09T16:31:00" as ISODateString);
   });
 
   test("handles single digit days", () => {
     const raw = "Senin, 1 Januari 2024 10:00 WIB";
-    expect(parseDate(raw)).toBe("2024-01-01T10:00:00");
+    expect(parseDate(raw)).toBe("2024-01-01T10:00:00" as ISODateString);
   });
 
   test("handles all months", () => {

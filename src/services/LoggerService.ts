@@ -1,13 +1,12 @@
-import { createConsola } from "consola";
-import type { ConsolaInstance, ConsolaReporter } from "consola";
-import yoctoSpinner from "yocto-spinner";
-import type { Spinner } from "yocto-spinner";
+import { log, spinner } from "@clack/prompts";
 import { mkdirSync, appendFileSync } from "node:fs";
-import { LOGS_DIR, LOG_FILE } from "../config/constants";
+import { appendFile } from "node:fs/promises";
+import { LOGS_DIR, LOG_FILE, TIMESTAMP_LENGTH, LOG_FLUSH_INTERVAL_MS } from "../config/constants";
 
 export class LoggerService {
-  private spinner: Spinner | null = null;
-  private consola: ConsolaInstance;
+  private spinnerInstance: ReturnType<typeof spinner> | null = null;
+  private writeBuffer: string[] = [];
+  private flushTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     try {
@@ -16,89 +15,129 @@ export class LoggerService {
       console.error(`Failed to create logs directory: ${error instanceof Error ? error.message : String(error)}`);
     }
 
-    const fileReporter: ConsolaReporter = {
-      log: (logObj) => {
-        try {
-          const message = logObj.args
-            .map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg)))
-            .join(" ")
-            .replace(/\u001b\[.*?m/g, "");
-          const ts = logObj.date
-            .toISOString()
-            .replace("T", " ")
-            .slice(0, 19);
-          appendFileSync(LOG_FILE, `[${ts}] ${message}\n`, "utf-8");
-        } catch (error) {
-          console.error(`Failed to write to log file: ${error instanceof Error ? error.message : String(error)}`);
-        }
-      },
-    };
-
-    this.consola = createConsola({});
-    this.consola.addReporter(fileReporter);
+    // File logger — captures all log output for persistent storage
+    this.setupFileLogging();
   }
 
-  private pauseSpinner(): void {
-    this.spinner?.clear();
+  private setupFileLogging(): void {
+    // Monkey-patch the log methods to also write to file
+    const original = {
+      info: log.info.bind(log),
+      success: log.success.bind(log),
+      warn: log.warn.bind(log),
+      error: log.error.bind(log),
+    };
+
+    const writeToFile = (level: string, message: string) => {
+      const clean = message.replace(/\u001b\[.*?m/g, "");
+      const ts = new Date().toISOString().replace("T", " ").slice(0, TIMESTAMP_LENGTH);
+      this.writeBuffer.push(`[${ts}] [${level}] ${clean}\n`);
+      this.scheduleFlush();
+    };
+
+    log.info = (message: string) => {
+      writeToFile("INFO", message);
+      return original.info(message);
+    };
+
+    log.success = (message: string) => {
+      writeToFile("SUCCESS", message);
+      return original.success(message);
+    };
+
+    log.warn = (message: string) => {
+      writeToFile("WARN", message);
+      return original.warn(message);
+    };
+
+    log.error = (message: string) => {
+      writeToFile("ERROR", message);
+      return original.error(message);
+    };
+  }
+
+  private scheduleFlush(): void {
+    if (this.flushTimer) return;
+    this.flushTimer = setInterval(() => this.flush(), LOG_FLUSH_INTERVAL_MS);
+    if (this.flushTimer?.unref) {
+      this.flushTimer.unref();
+    }
+  }
+
+  private async flush(): Promise<void> {
+    if (this.writeBuffer.length === 0) return;
+    const data = this.writeBuffer.join("");
+    this.writeBuffer = [];
+    if (this.flushTimer) {
+      clearInterval(this.flushTimer);
+      this.flushTimer = null;
+    }
+    try {
+      await appendFile(LOG_FILE, data, "utf-8");
+    } catch (error) {
+      console.error(`Failed to flush log file: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   info(message: string): void {
-    this.pauseSpinner();
-    this.consola.info(message);
+    log.info(message);
   }
 
   success(message: string): void {
-    this.pauseSpinner();
-    this.consola.success(message);
+    log.success(message);
   }
 
   warn(message: string): void {
-    this.pauseSpinner();
-    this.consola.warn(message);
+    log.warn(message);
   }
 
   error(message: string): void {
-    this.pauseSpinner();
-    this.consola.error(message);
+    log.error(message);
   }
 
   log(message: string): void {
-    this.pauseSpinner();
-    this.consola.log(message);
+    log.message(message);
+  }
+
+  flushSync(): void {
+    this.stopSpinner();
+    if (this.writeBuffer.length === 0) return;
+    const data = this.writeBuffer.join("");
+    this.writeBuffer = [];
+    if (this.flushTimer) {
+      clearInterval(this.flushTimer);
+      this.flushTimer = null;
+    }
+    try {
+      appendFileSync(LOG_FILE, data, "utf-8");
+    } catch {
+      // Best-effort on process exit — nothing we can do if this fails
+    }
   }
 
   startSpinner(text: string): void {
-    if (!this.spinner) {
-      this.spinner = yoctoSpinner({ text, color: "cyan" }).start();
+    if (!this.spinnerInstance) {
+      this.spinnerInstance = spinner();
+      this.spinnerInstance.start(text);
     } else {
-      this.spinner.text = text;
+      this.spinnerInstance.stop(text);
+      this.spinnerInstance = spinner();
+      this.spinnerInstance.start(text);
     }
   }
 
   updateSpinner(text: string): void {
-    if (this.spinner) {
-      this.spinner.text = text;
+    if (this.spinnerInstance) {
+      this.spinnerInstance.stop(text);
+      this.spinnerInstance = spinner();
+      this.spinnerInstance.start(text);
     }
   }
 
   stopSpinner(): void {
-    if (this.spinner) {
-      this.spinner.stop();
-      this.spinner = null;
+    if (this.spinnerInstance) {
+      this.spinnerInstance.stop();
+      this.spinnerInstance = null;
     }
-  }
-
-  getProgressBar(current: number, total: number, width = 15): string {
-    if (total <= 0) total = 100;
-    const percent = Math.min(1, current / total);
-    const filled = Math.round(width * percent);
-    
-    // Clean, modern, slim horizontal bar style using Catppuccin-inspired colors (cyan filled, dim gray empty)
-    const filledBar = "\u2501".repeat(filled);
-    const emptyBar = "\u2500".repeat(width - filled);
-    const coloredBar = `\x1b[36m${filledBar}\x1b[90m${emptyBar}\x1b[39m`;
-    
-    const pct = String(Math.round(percent * 100)).padStart(3);
-    return `\x1b[90m▕\x1b[39m${coloredBar}\x1b[90m▏\x1b[39m ${pct}%`;
   }
 }

@@ -1,14 +1,11 @@
-/** Branded format for a simple YYYY-MM-DD date string */
-export type DateString = string & { readonly __brand: unique symbol };
-
-export function parseIntOrUndefined(val: unknown): number | undefined {
-  if (val === undefined || val === null || val === "") return undefined;
-  const parsed = parseInt(String(val), 10);
+export function parseIntOrUndefined(inputValue: unknown): number | undefined {
+  if (inputValue === undefined || inputValue === null || inputValue === "") return undefined;
+  const parsed = parseInt(String(inputValue), 10);
   return Number.isNaN(parsed) ? undefined : parsed;
 }
 
-export function validatePositiveInteger(val: unknown, name: string): number | undefined {
-  const parsed = parseIntOrUndefined(val);
+export function validatePositiveInteger(inputValue: unknown, name: string): number | undefined {
+  const parsed = parseIntOrUndefined(inputValue);
   if (parsed !== undefined) {
     if (parsed <= 0) {
       throw new Error(`Option --${name} must be a positive integer.`);
@@ -17,9 +14,19 @@ export function validatePositiveInteger(val: unknown, name: string): number | un
   return parsed;
 }
 
-export function validateDateFormat(val: unknown, name: string): DateString | undefined {
-  if (val === undefined || val === null || val === "") return undefined;
-  const str = String(val);
+export function validateNonNegativeInteger(inputValue: unknown, name: string): number | undefined {
+  const parsed = parseIntOrUndefined(inputValue);
+  if (parsed !== undefined) {
+    if (parsed < 0) {
+      throw new Error(`Option --${name} must be a non-negative integer.`);
+    }
+  }
+  return parsed;
+}
+
+export function validateDateFormat(inputValue: unknown, name: string): string | undefined {
+  if (inputValue === undefined || inputValue === null || inputValue === "") return undefined;
+  const str = String(inputValue);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) {
     throw new Error(`Option --${name} must be in YYYY-MM-DD format.`);
   }
@@ -27,5 +34,5 @@ export function validateDateFormat(val: unknown, name: string): DateString | und
   if (Number.isNaN(date.getTime())) {
     throw new Error(`Option --${name} must be a valid date.`);
   }
-  return str as DateString;
+  return str;
 }

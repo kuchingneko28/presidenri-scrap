@@ -5,6 +5,7 @@ import { registerLegacyCommand } from "./commands/legacy.command";
 import { registerRequestCommand } from "./commands/request.command";
 import { registerStatsCommand } from "./commands/stats.command";
 import { registerSyncCommand } from "./commands/sync.command";
+import { registerSearchCommand } from "./commands/search.command";
 import pkg from "../package.json";
 
 const cli = cac("presidenri-scrap");
@@ -17,6 +18,7 @@ registerLegacyCommand(cli, app);
 registerRequestCommand(cli, app);
 registerStatsCommand(cli, app);
 registerSyncCommand(cli, app);
+registerSearchCommand(cli, app);
 
 cli.help();
 cli.parse();

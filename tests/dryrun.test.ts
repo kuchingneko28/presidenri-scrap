@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeAll, afterAll } from "bun:test";
-import { unlink, rm } from "node:fs/promises";
+import { unlink } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { STORAGE_DIR, DOWNLOAD_DIR } from "../src/config/constants";

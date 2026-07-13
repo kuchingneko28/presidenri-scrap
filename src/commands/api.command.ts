@@ -1,7 +1,7 @@
 import type { CAC } from "cac";
 import type { AppService } from "../services/AppService";
 import { DEFAULT_SINCE } from "../config/constants";
-import { validatePositiveInteger, validateDateFormat } from "../utils";
+import { validatePositiveInteger, validateNonNegativeInteger, validateDateFormat } from "../utils";
 
 export function registerApiCommand(cli: CAC, app: AppService): void {
   cli
@@ -24,30 +24,28 @@ export function registerApiCommand(cli: CAC, app: AppService): void {
     )
     .option("--limit <n>", "Maximum number of articles to process")
     .option("--dry-run", "Simulate run without writing to database or downloads")
-    .action(async (options) => {
-      try {
-        const perPage = validatePositiveInteger(options.perPage, "per-page");
-        const since = validateDateFormat(options.since, "since");
-        const before = validateDateFormat(options.before, "before");
-        const limit = validatePositiveInteger(options.limit, "limit");
+    .option("--type <type>", "WordPress post type to scrape (e.g., photo, photo-ebook)", { default: "photo" })
+    .option("--page-delay <ms>", "Delay between pages in milliseconds (rate limiting)", { default: 0 })
+    .action((options) => app.runAndExit(async () => {
+      const perPage = validatePositiveInteger(options.perPage, "per-page");
+      const since = validateDateFormat(options.since, "since");
+      const before = validateDateFormat(options.before, "before");
+      const limit = validatePositiveInteger(options.limit, "limit");
+      const pageDelay = validateNonNegativeInteger(options.pageDelay, "page-delay");
 
-        await app.runApiScraper({
-          download: options.download,
-          verbose: options.verbose,
-          force: options.force,
-          perPage,
-          filter: options.filter,
-          search: options.search,
-          since,
-          before,
-          limit,
-          dryRun: options.dryRun,
-        });
-      } catch (error) {
-        console.error(error instanceof Error ? error.message : String(error));
-        process.exit(1);
-      }
-      app.shutdown();
-      process.exit(0);
-    });
+      await app.runApiScraper({
+        download: options.download,
+        verbose: options.verbose,
+        force: options.force,
+        perPage,
+        filter: options.filter,
+        search: options.search,
+        since,
+        before,
+        limit,
+        dryRun: options.dryRun,
+        postType: options.type,
+        pageDelay,
+      });
+    }));
 }

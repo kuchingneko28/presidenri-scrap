@@ -1,7 +1,6 @@
 import * as cheerio from "cheerio";
-import pLimit from "p-limit";
 import { BaseScraper } from "./BaseScraper";
-import { BASE_URL, DOWNLOAD_CONCURRENCY } from "../config/constants";
+import { BASE_URL } from "../config/constants";
 import { parseDate } from "../utils";
 import { MediaParser } from "../utils/MediaParser";
 
@@ -14,7 +13,8 @@ interface LegacyArticleMeta {
 export class LegacyScraper extends BaseScraper {
   async scrape(): Promise<void> {
     this.stats.state = "scraping";
-    this.logger.startSpinner("Starting Legacy Scrape...");
+    this.logger.startSpinner("Scraping pages...");
+    this.logger.info("Starting Legacy Scrape...");
 
     await this.paginate<LegacyArticleMeta>(
       async (page) => {
@@ -51,22 +51,22 @@ export class LegacyScraper extends BaseScraper {
         const cleanDate = parseDate(meta.dateText) || "";
 
         if (this.options.download) {
-          const existing = this.db.getArticleByLink(meta.link);
-          if (existing) {
-            this.queueDownloads(existing.title, existing.date, existing.images, existing.link);
-            return false;
+          if (!this.options.force) {
+            const existing = this.db.getArticleByLink(meta.link);
+            if (existing) {
+              this.queueDownloads(existing.title, existing.date, existing.images, existing.link);
+              return false;
+            }
           }
         } else {
-          if (this.db.articleExistsByLink(meta.link)) {
+          if (!this.options.force && this.db.articleExistsByLink(meta.link)) {
             return false;
           }
         }
 
         const saved = await this.processArticle(meta.link, meta.title, cleanDate);
-        if (saved && this.options.verbose) {
+        if (saved && this.options.verbose && !this.spinnerStarted) {
           this.logger.success(`Saved: ${meta.title}`);
-        } else if (!saved && this.options.verbose) {
-          this.logger.info(`Skipped: ${meta.title}`);
         }
         return saved;
       },
@@ -75,15 +75,7 @@ export class LegacyScraper extends BaseScraper {
       }
     );
 
-    this.stats.state = "downloading";
-    this.updateStats({});
-
-    if (this.options.download) {
-      await this.waitForDownloads();
-    }
-
-    this.logger.stopSpinner();
-    this.logger.success(`Legacy Scraping completed. Found ${this.stats.found} new articles.`);
+    await this.finishScrape(`Legacy Scraping completed. Found ${this.stats.found} new articles.`);
   }
 
   private async processArticle(link: string, title: string, date: string): Promise<boolean> {
@@ -99,7 +91,7 @@ export class LegacyScraper extends BaseScraper {
         description = $('meta[name="description"]').attr("content") || "";
       }
 
-      const images = this.extractImageUrls($, link);
+      const images = MediaParser.extractFromSlider($, link);
 
       if (images.length > 0) {
         this.db.saveArticle({
@@ -117,13 +109,9 @@ export class LegacyScraper extends BaseScraper {
         return true;
       }
     } catch (error) {
-      this.logger.error(`Failed to process article ${link}: ${error}`);
+      this.logger.error(`Failed to process article ${link}: ${error instanceof Error ? error.message : String(error)}`);
     }
     return false;
-  }
-
-  private extractImageUrls($: cheerio.CheerioAPI, articleUrl: string): string[] {
-    return MediaParser.extractFromSlider($, articleUrl);
   }
 
   private extractCategoryTag(link: string): string[] {

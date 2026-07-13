@@ -49,4 +49,56 @@ describe("DatabaseService", () => {
 
     expect(db.getStats()).toBe(initialCount + 1);
   });
+
+  test("should search articles with query, tag, limit, offset, and limit: -1", () => {
+    const art1 = {
+      postId: 101,
+      link: "https://example.com/search-1",
+      title: "Prabowo Subianto Inauguration",
+      date: "2024-10-20",
+      description: "President Prabowo Subianto was inaugurated.",
+      tags: ["Foto", "Inauguration"],
+      images: ["img1.jpg"],
+    };
+    const art2 = {
+      postId: 102,
+      link: "https://example.com/search-2",
+      title: "Cabinet Announcement",
+      date: "2024-10-21",
+      description: "President Prabowo announced the cabinet.",
+      tags: ["Foto", "Cabinet"],
+      images: ["img2.jpg"],
+    };
+    const art3 = {
+      postId: 103,
+      link: "https://example.com/search-3",
+      title: "E-Album Prabowo",
+      date: "2024-10-22",
+      description: "E-Album of President Prabowo.",
+      tags: ["E-Album"],
+      images: ["img3.jpg"],
+    };
+
+    db.saveArticle(art1);
+    db.saveArticle(art2);
+    db.saveArticle(art3);
+
+    // Search by query
+    const queryResults = db.searchArticles("Inauguration");
+    expect(queryResults.length).toBe(1);
+    expect(queryResults[0]?.postId).toBe(101);
+
+    // Search by tag
+    const tagResults = db.searchArticles("", { tag: "E-Album" });
+    expect(tagResults.length).toBe(1);
+    expect(tagResults[0]?.postId).toBe(103);
+
+    // Search with limit and offset
+    const pagedResults = db.searchArticles("Prabowo", { limit: 1, offset: 1 });
+    expect(pagedResults.length).toBe(1);
+
+    // Search with limit: -1 (no limit)
+    const allResults = db.searchArticles("Prabowo", { limit: -1 });
+    expect(allResults.length).toBeGreaterThanOrEqual(3);
+  });
 });

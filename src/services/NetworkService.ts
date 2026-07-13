@@ -1,4 +1,4 @@
-import { BROWSER_REQUEST_FILE, DEFAULT_RETRIES } from "../config/constants";
+import { BROWSER_REQUEST_FILE, DEFAULT_RETRIES, BLOCK_WATCH_TIMEOUT, WORLD_READABLE_FILE_BIT, NO_BODY_STATUS_CODES, BACKOFF_BASE_MS, SHUTDOWN_POLL_MS, HTTP_BAD_REQUEST, HTTP_NOT_FOUND } from "../config/constants";
 import { HEADERS } from "../config/headers";
 import { parseBrowserRequestHeaders, findHeader } from "../utils";
 import { Impit } from "impit";
@@ -41,22 +41,28 @@ export class NetworkService {
       if (Object.keys(browserHeaders).length > 0) {
         this.headers = browserHeaders;
       }
+
+      // Security: warn if file is world-readable (contains credentials)
+      try {
+        const fileStat = await stat(BROWSER_REQUEST_FILE);
+        const mode = fileStat.mode;
+        if (mode & WORLD_READABLE_FILE_BIT) {
+          this.logger?.warn(`⚠️ ${BROWSER_REQUEST_FILE} is world-readable. Consider: chmod 600 ${BROWSER_REQUEST_FILE}`);
+        }
+      } catch (statError) {
+        this.logger?.warn(`Failed to check ${BROWSER_REQUEST_FILE} permissions: ${statError}`);
+      }
     }
     this.headersLoaded = true;
     this.headersLastLoadedTime = Date.now();
   }
 
-  async getHeaders(): Promise<Record<string, string>> {
-    if (!this.headersLoaded) await this.refreshHeaders();
-    return { ...this.headers };
-  }
-
-  async fetch(url: string, options: ImpitRequestInit & { verbose?: boolean } = {}, retries = DEFAULT_RETRIES): Promise<Response> {
+  async fetch(url: string, options: ImpitRequestInit & { verbose?: boolean; headers?: Record<string, string> } = {}, retries = DEFAULT_RETRIES): Promise<Response> {
     if (!this.headersLoaded) await this.refreshHeaders();
 
     const headers: Record<string, string> = {
       ...this.headers,
-      ...(options.headers as Record<string, string>),
+      ...options.headers,
     };
 
     const mergedOptions: ImpitRequestInit = {
@@ -65,26 +71,20 @@ export class NetworkService {
     };
 
     let lastError: Error | null = null;
+    const toError = (value: unknown): Error =>
+      value instanceof Error ? value : new Error(String(value));
 
-    if (options.verbose && this.logger) {
+    // Only log main API endpoint fetches, not media attachment sub-requests
+    if (options.verbose && this.logger && !url.includes("/media?parent=")) {
       this.logger.info(`Fetching: ${url}`);
     }
 
     for (let attempt = 0; attempt < retries; attempt++) {
       try {
         const impitResponse = await this.impit.fetch(url, mergedOptions);
-        const hasNoBody = [101, 204, 205, 304].includes(impitResponse.status) || mergedOptions.method === "HEAD";
-        const response = new Response(hasNoBody ? null : impitResponse.body, {
-          status: impitResponse.status,
-          statusText: impitResponse.statusText,
-          headers: impitResponse.headers,
-        });
-        Object.defineProperty(response, "url", {
-          value: impitResponse.url,
-          writable: false,
-        });
+        const response = this.buildResponse(impitResponse, mergedOptions.method);
 
-        if (response.ok || response.status === 400 || response.status === 404) {
+        if (response.ok || response.status === HTTP_BAD_REQUEST || response.status === HTTP_NOT_FOUND) {
           return response;
         }
 
@@ -94,16 +94,16 @@ export class NetworkService {
         }
 
         // Non-403 server error: backoff and retry
-        await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+        await this.backoff(attempt);
       } catch (error) {
-        lastError = error as Error;
+        lastError = toError(error);
 
         if (lastError.message.includes("403")) {
-          const reloaded = await this.handle403Block(url, headers);
+          const reloaded = await this.handle403Block(url);
           if (reloaded) {
             mergedOptions.headers = {
               ...this.headers,
-              ...(options.headers as Record<string, string>),
+              ...options.headers,
             };
             attempt = -1; // Reset retry count after header reload
             continue;
@@ -117,14 +117,32 @@ export class NetworkService {
         }
 
         // Non-403 error: backoff and retry
-        await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+        await this.backoff(attempt);
       }
     }
 
     throw lastError || new Error(`Failed to fetch ${url} after ${retries} retries`);
   }
 
-  private async handle403Block(url: string, currentHeaders: Record<string, string>): Promise<boolean> {
+  private backoff(attempt: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, BACKOFF_BASE_MS * (attempt + 1)));
+  }
+
+  private buildResponse(impitResponse: { status: number; statusText: string; headers: Headers; body: ReadableStream<Uint8Array> | null; url: string }, method?: string): Response {
+    const hasNoBody = NO_BODY_STATUS_CODES.includes(impitResponse.status) || method === "HEAD";
+    const response = new Response(hasNoBody ? null : impitResponse.body, {
+      status: impitResponse.status,
+      statusText: impitResponse.statusText,
+      headers: impitResponse.headers,
+    });
+    Object.defineProperty(response, "url", {
+      value: impitResponse.url,
+      writable: false,
+    });
+    return response;
+  }
+
+  private async handle403Block(url: string): Promise<boolean> {
     if (this.activeBlockResolution) {
       return this.activeBlockResolution;
     }
@@ -137,61 +155,22 @@ export class NetworkService {
         this.logger.info(`Waiting for file update to resume...`);
       }
 
-      let initialMtime = 0;
-      if (existsSync(BROWSER_REQUEST_FILE)) {
-        try {
-          const fileStat = await stat(BROWSER_REQUEST_FILE);
-          initialMtime = fileStat.mtimeMs;
-        } catch {}
-      }
+      const initialMtime = await this.getFileMtime();
+      const { watcher, fileUpdatedPromise } = this.createFileWatcher(initialMtime);
+
       let updated = false;
 
-      // Set up fs.watch on the directory to monitor browser-request.curl
-      const dir = path.dirname(BROWSER_REQUEST_FILE);
-      const filename = path.basename(BROWSER_REQUEST_FILE);
-      let watcher: FSWatcher | undefined;
-
-      const fileUpdatedPromise = new Promise<void>((resolve) => {
-        try {
-          watcher = watch(dir, async (eventType: string | null, changedFilename: string | null) => {
-            if (changedFilename === filename || !changedFilename) {
-              if (existsSync(BROWSER_REQUEST_FILE)) {
-                try {
-                  const fileStat = await stat(BROWSER_REQUEST_FILE);
-                  if (fileStat.mtimeMs > initialMtime) {
-                    if (fileStat.mtimeMs > this.headersLastLoadedTime) {
-                      if (this.logger) this.logger.success(`\n✓ Detected browser-request.curl update. Reloading headers...`);
-                      await this.refreshHeaders();
-                    }
-                    updated = true;
-                    resolve();
-                  }
-                } catch {}
-              }
-            }
-          });
-        } catch (e) {
-          // Fallback if watch fails
-        }
-      });
-
-      // Race watcher update against a 5-minute timeout (300,000 ms) and shutdown flag polling
-      const timeoutPromise = new Promise<void>((resolve) => setTimeout(resolve, 300000));
-      
+      const timeoutPromise = new Promise<void>((resolve) => setTimeout(resolve, BLOCK_WATCH_TIMEOUT));
       const checkShutdown = async () => {
         while (!updated && !this.isShuttingDown) {
-          await new Promise((r) => setTimeout(r, 500));
+          await new Promise((r) => setTimeout(r, SHUTDOWN_POLL_MS));
         }
       };
 
-      await Promise.race([fileUpdatedPromise, timeoutPromise, checkShutdown()]);
+      const fileUpdated = await Promise.race([fileUpdatedPromise, timeoutPromise, checkShutdown()]);
+      if (fileUpdated) updated = true;
 
-      if (watcher) {
-        try {
-          watcher.close();
-        } catch {}
-      }
-
+      this.closeWatcher(watcher);
       this.activeBlockResolution = null;
 
       if (updated) {
@@ -202,5 +181,64 @@ export class NetworkService {
     })();
 
     return this.activeBlockResolution;
+  }
+
+  private async getFileMtime(): Promise<number> {
+    if (!existsSync(BROWSER_REQUEST_FILE)) return 0;
+    try {
+      const fileStat = await stat(BROWSER_REQUEST_FILE);
+      return fileStat.mtimeMs;
+    } catch (statError) {
+      this.logger?.warn(`Failed to stat ${BROWSER_REQUEST_FILE}: ${statError}`);
+      return 0;
+    }
+  }
+
+  private createFileWatcher(initialMtime: number): {
+    watcher: FSWatcher | undefined;
+    fileUpdatedPromise: Promise<boolean>;
+    markUpdated: () => void;
+  } {
+    let watcher: FSWatcher | undefined;
+    let markUpdated: () => void = () => {};
+
+    const fileUpdatedPromise = new Promise<boolean>((resolve) => {
+      markUpdated = () => resolve(true);
+
+      const dir = path.dirname(BROWSER_REQUEST_FILE);
+      const filename = path.basename(BROWSER_REQUEST_FILE);
+
+      try {
+        watcher = watch(dir, async (_eventType: string | null, changedFilename: string | null) => {
+          if (changedFilename !== filename && changedFilename) return;
+          if (!existsSync(BROWSER_REQUEST_FILE)) return;
+
+          try {
+            const fileStat = await stat(BROWSER_REQUEST_FILE);
+            if (fileStat.mtimeMs <= initialMtime) return;
+            if (fileStat.mtimeMs > this.headersLastLoadedTime) {
+              if (this.logger) this.logger.success(`\n✓ Detected browser-request.curl update. Reloading headers...`);
+              await this.refreshHeaders();
+            }
+            markUpdated();
+          } catch (statError) {
+            this.logger?.warn(`Failed to stat ${BROWSER_REQUEST_FILE} during watch: ${statError}`);
+          }
+        });
+      } catch (watchError) {
+        this.logger?.warn(`Failed to set up file watcher: ${watchError}`);
+      }
+    });
+
+    return { watcher, fileUpdatedPromise, markUpdated };
+  }
+
+  private closeWatcher(watcher: FSWatcher | undefined): void {
+    if (!watcher) return;
+    try {
+      watcher.close();
+    } catch (closeError) {
+      this.logger?.warn(`Failed to close file watcher: ${closeError}`);
+    }
   }
 }

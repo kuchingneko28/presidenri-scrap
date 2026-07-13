@@ -1,3 +1,5 @@
+const SUSPICIOUS_HEADERS = ["Authorization", "X-Forwarded-For", "X-Real-IP", "X-Api-Key", "X-CSRF-Token"];
+
 export function parseBrowserRequestHeaders(content: string): Record<string, string> {
   const headers: Record<string, string> = {};
   const tokens = tokenizeCurl(content);
@@ -14,7 +16,12 @@ export function parseBrowserRequestHeaders(content: string): Record<string, stri
 
     const name = header.slice(0, separator).trim();
     const value = header.slice(separator + 1).trim();
-    if (name && value) headers[name] = value;
+    if (name && value) {
+      if (SUSPICIOUS_HEADERS.includes(name)) {
+        console.warn(`⚠️ Suspicious header detected: ${name}. Verify this was intentional.`);
+      }
+      headers[name] = value;
+    }
   }
 
   const cookie = readLastOptionValue(tokens, ["-b", "--cookie"]);
@@ -70,40 +77,40 @@ function readOptionValue(
 function tokenizeCurl(content: string): string[] {
   const input = content.replace(/\\\r?\n/g, " ");
   const tokens: string[] = [];
-  let token = "";
-  let quote: "'" | '"' | null = null;
+  let currentToken = "";
+  let activeQuote: "'" | '"' | null = null;
 
   for (let charIndex = 0; charIndex < input.length; charIndex++) {
-    const char = input[charIndex];
-    if (char === undefined) continue;
+    const currentChar = input[charIndex];
+    if (currentChar === undefined) continue;
 
-    if (quote) {
-      if (char === quote) {
-        quote = null;
-      } else if (char === "\\" && quote === '"' && input[charIndex + 1] !== undefined) {
-        token += input[++charIndex];
+    if (activeQuote) {
+      if (currentChar === activeQuote) {
+        activeQuote = null;
+      } else if (currentChar === "\\" && activeQuote === '"' && input[charIndex + 1] !== undefined) {
+        currentToken += input[++charIndex];
       } else {
-        token += char;
+        currentToken += currentChar;
       }
       continue;
     }
 
-    if (char === "'" || char === '"') {
-      quote = char;
+    if (currentChar === "'" || currentChar === '"') {
+      activeQuote = currentChar;
       continue;
     }
 
-    if (/\s/.test(char)) {
-      if (token) {
-        tokens.push(token);
-        token = "";
+    if (/\s/.test(currentChar)) {
+      if (currentToken) {
+        tokens.push(currentToken);
+        currentToken = "";
       }
       continue;
     }
 
-    token += char;
+    currentToken += currentChar;
   }
 
-  if (token) tokens.push(token);
+  if (currentToken) tokens.push(currentToken);
   return tokens;
 }

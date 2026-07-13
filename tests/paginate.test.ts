@@ -1,4 +1,4 @@
-import { describe, expect, test, mock } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { BaseScraper } from "../src/scrapers/BaseScraper";
 import { DatabaseService } from "../src/services/DatabaseService";
 import { LoggerService } from "../src/services/LoggerService";

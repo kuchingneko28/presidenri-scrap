@@ -1,17 +1,19 @@
-import { mkdirSync, utimesSync, existsSync } from 'node:fs';
-import { writeFile } from 'node:fs/promises';
-import path from 'node:path';
-import pLimit from 'p-limit';
-import { DOWNLOAD_DIR, DOWNLOAD_CONCURRENCY, STREAM_TIMEOUT, FETCH_TIMEOUT, MIN_FILE_SIZE } from '../config/constants';
-import type { DownloadItem, DownloadStats } from '../types';
-import { sanitize } from '../utils';
-import { UrlGenerator } from '../utils/UrlGenerator';
-import type { LoggerService } from './LoggerService';
-import type { NetworkService } from './NetworkService';
-import { CloudflareBlockError } from './NetworkService';
+import { mkdirSync, utimesSync, statSync, linkSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
+import path from "node:path";
+import { EventEmitter } from "node:events";
+import pLimit from "p-limit";
+import { DOWNLOAD_DIR, DOWNLOAD_CONCURRENCY, DEFAULT_RETRIES, STREAM_TIMEOUT, FETCH_TIMEOUT, MIN_FILE_SIZE, FALLBACK_FILENAME_PREFIX, FALLBACK_EXTENSION } from "../config/constants";
+import type { DownloadItem, DownloadStats } from "../types";
+import { sanitize } from "../utils";
+import { UrlGenerator } from "../utils/UrlGenerator";
+import type { LoggerService } from "./LoggerService";
+import type { NetworkService } from "./NetworkService";
+import { CloudflareBlockError } from "./NetworkService";
 
-export class DownloadService {
+export class DownloadService extends EventEmitter {
   private limit!: ReturnType<typeof pLimit>;
+  private downloadedUrls = new Map<string, string>();
   private stats = {
     queued: 0,
     active: 0,
@@ -27,6 +29,7 @@ export class DownloadService {
     private network: NetworkService,
     concurrency: number = DOWNLOAD_CONCURRENCY
   ) {
+    super();
     this.limit = pLimit(concurrency);
   }
 
@@ -35,6 +38,10 @@ export class DownloadService {
 
   public setDryRun(value: boolean): void {
     this.dryRun = value;
+  }
+
+  reset(): void {
+    this.stats = { queued: 0, active: 0, done: 0, failed: 0, bytesDownloaded: 0, bytesTotal: 0, skipped: 0 };
   }
 
   public setShuttingDown(value: boolean): void {
@@ -46,16 +53,39 @@ export class DownloadService {
 
   async download(item: DownloadItem, verbose = false): Promise<void> {
     this.stats.queued++;
+    const normalizedUrl = UrlGenerator.normalizeUrl(item.imageUrl);
+
+    const existingPath = this.downloadedUrls.get(normalizedUrl);
+    if (existingPath) {
+      const newFilePath = this.getFilePath(item);
+      if (this.dryRun) {
+        if (verbose) this.logger.info(`[Dry-Run] Would link: ${existingPath} -> ${newFilePath}`);
+        this.stats.skipped++;
+        return;
+      }
+      if (!this.checkFileExists(newFilePath)) {
+        try {
+          linkSync(existingPath, newFilePath);
+          this.stats.skipped++;
+          return;
+        } catch {
+          // File not ready yet — fall through to download
+        }
+      } else {
+        this.stats.skipped++;
+        return;
+      }
+    }
 
     return this.limit(async () => {
       if (this.isShuttingDown) {
-        this.stats.skipped++; // Prevent waitForDownloads hanging forever
+        this.stats.skipped++;
         return;
       }
       this.stats.active++;
       try {
         const filePath = this.getFilePath(item);
-        if (await this.checkFileExists(filePath, verbose, item)) return;
+        if (this.checkFileExists(filePath)) return;
 
         if (this.dryRun) {
           if (verbose) this.logger.info(`[Dry-Run] Would download: ${item.imageUrl} -> ${filePath}`);
@@ -66,17 +96,18 @@ export class DownloadService {
         const { response, buffer, contentLength, receivedLength } = await this.fetchWithFallbacks(item, verbose);
         await this.saveFile(filePath, buffer, response, item);
 
-        // Count bytes only on success — no rollback needed
+        this.downloadedUrls.set(normalizedUrl, filePath);
+
         this.stats.bytesDownloaded += receivedLength;
         this.stats.bytesTotal += Math.max(contentLength, receivedLength);
 
-        if (verbose) this.logger.success(`Downloaded: ${path.basename(filePath)}`);
         this.stats.done++;
       } catch (error) {
         this.stats.failed++;
-        this.logger.error(`Download failed: ${item.imageUrl} - ${error}`);
+        this.logger.error(`Download failed: ${item.imageUrl} - ${error instanceof Error ? error.message : String(error)}`);
       } finally {
         this.stats.active--;
+        this.emit("done");
       }
     });
   }
@@ -88,19 +119,20 @@ export class DownloadService {
       mkdirSync(folderPath, { recursive: true });
     }
 
-    const urlPath = item.imageUrl.split('?')[0] || '';
+    const urlPath = item.imageUrl.split("?")[0] || "";
     const originalFileName = path.basename(urlPath);
-    const fileName = originalFileName.includes('.') ? originalFileName : `image_${item.index}.jpg`;
+    const fileName = originalFileName.includes(".") ? originalFileName : `${FALLBACK_FILENAME_PREFIX}${item.index}${FALLBACK_EXTENSION}`;
     return path.join(folderPath, fileName);
   }
 
-  private async checkFileExists(filePath: string, verbose: boolean, item: DownloadItem): Promise<boolean> {
-    if (existsSync(filePath)) {
-      if (verbose) this.logger.info(`Skipping existing: ${path.basename(filePath)}`);
+  private checkFileExists(filePath: string): boolean {
+    try {
+      statSync(filePath);
       this.stats.done++;
       return true;
+    } catch {
+      return false;
     }
-    return false;
   }
 
   private async fetchWithFallbacks(item: DownloadItem, verbose: boolean): Promise<{
@@ -110,47 +142,44 @@ export class DownloadService {
     receivedLength: number;
   }> {
     const uniqueUrls = UrlGenerator.generateCandidates(item.imageUrl);
-    let lastError: Error | undefined;
+    let lastError: Error | null = null;
 
     for (const url of uniqueUrls) {
       try {
-        if (verbose && url !== item.imageUrl) this.logger.info(`Trying fallback: ${url}`);
-
-        const response = await this.network.fetch(url, { verbose, timeout: FETCH_TIMEOUT }, 1);
+        const response = await this.network.fetch(url, { verbose, timeout: FETCH_TIMEOUT }, DEFAULT_RETRIES);
         this.validateResponse(response);
 
-        const contentLength = parseInt(response.headers.get('Content-Length') || '0', 10);
+        const contentLength = parseInt(response.headers.get("Content-Length") || "0", 10);
         let receivedLength = 0;
-        let chunks: Uint8Array[] = [];
+        let receivedChunks: Uint8Array[] = [];
 
         if (response.body) {
           const result = await this.readStream(response.body);
           receivedLength = result.length;
-          chunks = result.data;
+          receivedChunks = result.data;
         } else {
           const ab = await response.arrayBuffer();
           receivedLength = ab.byteLength;
-          chunks = [new Uint8Array(ab)];
+          receivedChunks = [new Uint8Array(ab)];
         }
 
-        const buffer = this.concatChunks(chunks, receivedLength);
-        if (buffer.byteLength < MIN_FILE_SIZE) throw new Error('File too small');
+        const buffer = this.concatChunks(receivedChunks, receivedLength);
+        if (buffer.byteLength < MIN_FILE_SIZE) throw new Error("File too small");
 
         return { response, buffer, contentLength, receivedLength };
       } catch (error) {
-        lastError = error as Error;
-        if (verbose) this.logger.warn(`Fetch failed for ${url}: ${lastError.message}`);
+        lastError = error instanceof Error ? error : new Error(String(error));
         this.checkCloudflareBlock(lastError);
       }
     }
 
-    const attemptMsg = uniqueUrls.length > 1 ? `after trying ${uniqueUrls.length} URL variations` : 'URL';
-    throw new Error(`Failed ${attemptMsg}. Last error: ${lastError?.message || 'Unknown'}`);
+    const attemptMsg = uniqueUrls.length > 1 ? `after trying ${uniqueUrls.length} URL variations` : "URL";
+    throw new Error(`Failed ${attemptMsg}. Last error: ${lastError?.message || "Unknown"}`);
   }
 
   private validateResponse(response: Response): void {
-    const contentType = response.headers.get('Content-Type') || '';
-    if (!response.ok || (!contentType.startsWith('image/') && response.status !== 404)) {
+    const contentType = response.headers.get("Content-Type") || "";
+    if (!response.ok || (!contentType.startsWith("image/") && response.status !== 404)) {
       throw new Error(`Invalid response (${response.status})`);
     }
   }
@@ -167,7 +196,7 @@ export class DownloadService {
     const resetTimeout = () => {
       if (timeoutId) clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
-        timeoutErr = new Error('Stream read timeout (tarpit detected)');
+        timeoutErr = new Error("Stream read timeout (tarpit detected)");
         reader.cancel().catch(() => {});
       }, STREAM_TIMEOUT);
     };
@@ -175,7 +204,7 @@ export class DownloadService {
     resetTimeout();
 
     absoluteTimeoutId = setTimeout(() => {
-      timeoutErr = new Error('Absolute stream download timeout exceeded');
+      timeoutErr = new Error("Absolute stream download timeout exceeded");
       reader.cancel().catch(() => {});
     }, FETCH_TIMEOUT);
 
@@ -228,7 +257,7 @@ export class DownloadService {
 
   private async saveFile(filePath: string, buffer: Uint8Array, response: Response, item: DownloadItem): Promise<void> {
     await writeFile(filePath, buffer);
-    const lastModified = response.headers.get('Last-Modified');
+    const lastModified = response.headers.get("Last-Modified");
     const mtime = lastModified ? new Date(lastModified) : new Date(item.date);
     if (!isNaN(mtime.getTime())) {
       utimesSync(filePath, mtime, mtime);
@@ -236,9 +265,20 @@ export class DownloadService {
   }
 
   async waitForIdle(): Promise<void> {
-    while (this.stats.queued > this.stats.done + this.stats.failed + this.stats.skipped) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+    if (this.stats.queued <= this.stats.done + this.stats.failed + this.stats.skipped) {
+      return;
     }
+
+    return new Promise((resolve) => {
+      const check = () => {
+        if (this.stats.queued <= this.stats.done + this.stats.failed + this.stats.skipped) {
+          this.off("done", check);
+          resolve();
+        }
+      };
+      this.on("done", check);
+      check();
+    });
   }
 
   getStats(): DownloadStats {
