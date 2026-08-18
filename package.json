@@ -1,16 +1,15 @@
 {
   "name": "presidenri-scrap",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "module": "src/index.ts",
   "scripts": {
-    "start": "bun run src/index.ts api",
-    "api": "bun run src/index.ts api",
-    "legacy": "bun run src/index.ts legacy",
-    "download": "bun run src/index.ts api --download",
-    "update": "bun run src/index.ts legacy --update",
-    "stats": "bun run src/index.ts stats",
+    "start": "bun run src/index.ts",
+    "scrape": "bun run src/index.ts",
+    "download": "bun run src/index.ts --download",
     "sync": "bun run src/index.ts sync",
-    "request": "bun run src/index.ts request",
+    "stats": "bun run src/index.ts stats",
+    "search": "bun run src/index.ts search",
+    "auth": "bun run src/index.ts auth",
     "test": "bun test"
   },
   "type": "module",
@@ -21,7 +20,6 @@
   "dependencies": {
     "@clack/prompts": "^1.7.0",
     "cac": "^7.0.0",
-    "cheerio": "^1.2.0",
     "impit": "^0.14.0",
     "p-limit": "^7.3.0"
   }

@@ -2,43 +2,35 @@
 node_modules/
 .bun/
 
-# Database
+# Database & Storage
 *.db
 *.db-journal
-
-# Project Specific
-downloads/
-cookies.txt
-curl.txt
+*.db-wal
+*.db-shm
+storage/*.db*
+storage/logs/
 storage/cookies.txt
 storage/request.curl
 storage/browser-request.curl
-debug_db.ts
-test_date.ts
-test_data.db
-presidenri-old-scrap/
 
-# Deepwork session data
-.slim/
+# Downloads
+downloads/
+
+# Logs & Temporary
+*.log
+tmp/
 session-*.md
 
 # OS
 .DS_Store
 Thumbs.db
 
-# IDE
+# IDE & Tooling
 .vscode/
 .idea/
 *.swp
 *.swo
 .slim/
 .opencode/
+.mimocode/
 AGENTS.md
-
-# Temporary
-tmp/
-*.log
-storage/data.db*
-storage/debug-html/
-storage/logs/
-storage/research/
